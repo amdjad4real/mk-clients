@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Language, Theme, Client, ClientFormData } from './types';
-import { TRANSLATIONS } from './constants';
-import Navbar from './components/Navbar';
-import ClientForm from './components/ClientForm';
-import ClientTable from './components/ClientTable';
-import Auth from './components/Auth';
-import { maskCard } from './utils/helpers';
-import { supabase } from './lib/supabase';
+import { Language, Theme, Client, ClientFormData } from './types.ts';
+import { TRANSLATIONS } from './constants.tsx';
+import Navbar from './components/Navbar.tsx';
+import ClientForm from './components/ClientForm.tsx';
+import ClientTable from './components/ClientTable.tsx';
+import Auth from './components/Auth.tsx';
+import { maskCard } from './utils/helpers.ts';
+import { supabase } from './lib/supabase.ts';
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>(() => {
@@ -27,6 +27,7 @@ const App: React.FC = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [copyingClient, setCopyingClient] = useState<Partial<ClientFormData> | null>(null);
 
+  // Auth Initialization
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -40,31 +41,7 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (session?.user) {
-      fetchClients();
-    } else {
-      setClients([]);
-    }
-  }, [session]);
-
-  const fetchClients = async () => {
-    setIsFetchingClients(true);
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setClients(data || []);
-    } catch (err) {
-      console.error('Error fetching clients:', err);
-    } finally {
-      setIsFetchingClients(false);
-    }
-  };
-
+  // Sync Preferences
   useEffect(() => {
     localStorage.setItem('lang', lang);
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -80,89 +57,124 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const t = TRANSLATIONS[lang];
+  // Client Data Mapping Functions
+  const mapToDB = (data: ClientFormData, userId: string) => ({
+    user_id: userId,
+    last_name: data.lastName,
+    first_name: data.firstName,
+    phone_number: data.phoneNumber,
+    dob: data.dob,
+    passport_number: data.passportNumber,
+    issue_date: data.issueDate,
+    expiry_date: data.expiryDate,
+    place_of_issue: data.placeOfIssue,
+    previous_visa_number: data.previousVisaNumber,
+    visa_from: data.visaFrom,
+    visa_to: data.visaTo,
+    category: data.category,
+    appointment_date: data.appointmentDate,
+    photo_url: data.photoUrl,
+    payment: {
+      cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
+      expiryDate: data.payment.expiryDate || 'N/A',
+      cardHolderName: data.payment.cardHolderName || 'N/A',
+      cardNumber: data.payment.cardNumber, 
+      cvv: data.payment.cvv
+    }
+  });
+
+  const mapFromDB = (dbItem: any): Client => ({
+    id: dbItem.id,
+    lastName: dbItem.last_name,
+    firstName: dbItem.first_name,
+    phoneNumber: dbItem.phone_number,
+    dob: dbItem.dob,
+    passportNumber: dbItem.passport_number,
+    issueDate: dbItem.issue_date,
+    expiryDate: dbItem.expiry_date,
+    placeOfIssue: dbItem.place_of_issue,
+    previousVisaNumber: dbItem.previous_visa_number,
+    visaFrom: dbItem.visa_from,
+    visaTo: dbItem.visa_to,
+    category: dbItem.category,
+    appointmentDate: dbItem.appointment_date,
+    photoUrl: dbItem.photo_url,
+    payment: dbItem.payment
+  });
+
+  const fetchClients = async () => {
+    if (!session?.user) return;
+    setIsFetchingClients(true);
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setClients((data || []).map(mapFromDB));
+    } catch (err) {
+      console.error('Error fetching clients:', err);
+    } finally {
+      setIsFetchingClients(false);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchClients();
+    }
+  }, [session]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
   const handleRegisterClient = async (formData: ClientFormData) => {
-    if (!session?.user) {
-      alert('Session expired. Please log in again.');
-      return;
-    }
-
+    if (!session?.user) return;
     try {
-      // Prepare the data record for Supabase
-      // We explicitly structure it to match our JSONB 'payment' column and the Omit<Client, 'id' | 'payment'> logic
-      const { payment: rawPayment, ...restOfData } = formData;
-      
-      const paymentRecord = {
-        cardMask: rawPayment.cardNumber ? maskCard(rawPayment.cardNumber) : 'N/A',
-        expiryDate: rawPayment.expiryDate || 'N/A',
-        cardHolderName: rawPayment.cardHolderName || 'N/A',
-        cardNumber: rawPayment.cardNumber, // Store raw for copying feature
-        cvv: rawPayment.cvv // Store raw for copying feature
-      };
-
-      const insertPayload = {
-        ...restOfData,
-        user_id: session.user.id,
-        payment: paymentRecord
-      };
-
-      const { data: inserted, error } = await supabase
+      const payload = mapToDB(formData, session.user.id);
+      const { data, error } = await supabase
         .from('clients')
-        .insert([insertPayload])
+        .insert([payload])
         .select();
 
-      if (error) {
-        console.error('Supabase registration error:', error);
-        throw new Error(error.message);
-      }
+      if (error) throw error;
       
-      if (inserted && inserted.length > 0) {
-        setClients(prev => [inserted[0], ...prev]);
+      if (data && data.length > 0) {
+        const newClient = mapFromDB(data[0]);
+        setClients(prev => [newClient, ...prev]);
         setCopyingClient(null);
-      } else {
-        throw new Error('Registration failed: No data returned from server.');
       }
     } catch (err: any) {
-      console.error('Registration failed:', err);
-      alert(err.message || 'Failed to register client. Please check your internet and database settings.');
+      console.error('Registration error:', err);
+      alert('Registration failed: ' + (err.message || 'Check your database connection'));
       throw err;
     }
   };
 
   const handleUpdateClient = async (id: string, formData: ClientFormData) => {
+    if (!session?.user) return;
     try {
-      const { payment: rawPayment, ...restOfData } = formData;
-      
-      const paymentRecord = {
-        cardMask: rawPayment.cardNumber ? maskCard(rawPayment.cardNumber) : 'N/A',
-        expiryDate: rawPayment.expiryDate || 'N/A',
-        cardHolderName: rawPayment.cardHolderName || 'N/A',
-        cardNumber: rawPayment.cardNumber,
-        cvv: rawPayment.cvv
-      };
-
+      const payload = mapToDB(formData, session.user.id);
       const { error } = await supabase
         .from('clients')
-        .update({ ...restOfData, payment: paymentRecord })
+        .update(payload)
         .eq('id', id);
 
       if (error) throw error;
       
-      setClients(prev => prev.map(c => c.id === id ? { ...c, ...restOfData, payment: paymentRecord } : c));
+      setClients(prev => prev.map(c => c.id === id ? { ...mapFromDB(payload), id } : c));
       setEditingClient(null);
     } catch (err: any) {
       console.error('Update failed:', err);
-      alert(err.message || 'Failed to update client');
+      alert('Update failed: ' + err.message);
       throw err;
     }
   };
 
   const handleDeleteClient = async (id: string) => {
+    const t = TRANSLATIONS[lang];
     if (!window.confirm(t.confirmDelete)) return;
     
     try {
@@ -175,7 +187,7 @@ const App: React.FC = () => {
       setClients(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Failed to delete client');
+      alert('Delete failed');
     }
   };
 
@@ -193,21 +205,13 @@ const App: React.FC = () => {
       category: client.category,
       appointmentDate: client.appointmentDate,
       photoUrl: client.photoUrl,
-      passportNumber: '',
-      visaFrom: '',
-      visaTo: '',
-      previousVisaNumber: '',
-      payment: {
-        cardNumber: '',
-        cardHolderName: '',
-        expiryDate: '',
-        cvv: ''
-      }
+      payment: { cardNumber: '', cardHolderName: '', expiryDate: '', cvv: '' }
     };
-    
     setCopyingClient(copiedData);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const t = TRANSLATIONS[lang];
 
   if (isLoadingSession) {
     return (
@@ -278,13 +282,8 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-              <h3 className="text-xl font-bold">{t.edit} - {editingClient.id}</h3>
-              <button 
-                onClick={() => setEditingClient(null)}
-                className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-              >
-                ✕
-              </button>
+              <h3 className="text-xl font-bold">{t.edit} - {editingClient.firstName} {editingClient.lastName}</h3>
+              <button onClick={() => setEditingClient(null)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">✕</button>
             </div>
             <div className="p-6">
               <ClientForm 
