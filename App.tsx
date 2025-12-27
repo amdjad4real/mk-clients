@@ -72,7 +72,7 @@ const App: React.FC = () => {
     visa_from: data.visaFrom,
     visa_to: data.visaTo,
     category: data.category,
-    appointment_date: data.appointmentDate,
+    appointment_date: data.appointmentDate, // This matches the database column name
     photo_url: data.photoUrl,
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
@@ -85,20 +85,20 @@ const App: React.FC = () => {
 
   const mapFromDB = (dbItem: any): Client => ({
     id: dbItem.id,
-    lastName: dbItem.last_name,
-    firstName: dbItem.first_name,
-    phoneNumber: dbItem.phone_number,
+    lastName: dbItem.last_name || dbItem.lastName,
+    firstName: dbItem.first_name || dbItem.firstName,
+    phoneNumber: dbItem.phone_number || dbItem.phoneNumber,
     dob: dbItem.dob,
-    passportNumber: dbItem.passport_number,
-    issueDate: dbItem.issue_date,
-    expiryDate: dbItem.expiry_date,
-    placeOfIssue: dbItem.place_of_issue,
-    previousVisaNumber: dbItem.previous_visa_number,
-    visaFrom: dbItem.visa_from,
-    visaTo: dbItem.visa_to,
+    passportNumber: dbItem.passport_number || dbItem.passportNumber,
+    issueDate: dbItem.issue_date || dbItem.issueDate,
+    expiryDate: dbItem.expiry_date || dbItem.expiryDate,
+    placeOfIssue: dbItem.place_of_issue || dbItem.placeOfIssue,
+    previousVisaNumber: dbItem.previous_visa_number || dbItem.previousVisaNumber,
+    visaFrom: dbItem.visa_from || dbItem.visaFrom,
+    visaTo: dbItem.visa_to || dbItem.visaTo,
     category: dbItem.category,
-    appointmentDate: dbItem.appointment_date,
-    photoUrl: dbItem.photo_url,
+    appointmentDate: dbItem.appointment_date || dbItem.appointmentDate,
+    photoUrl: dbItem.photo_url || dbItem.photoUrl,
     payment: dbItem.payment
   });
 
@@ -131,24 +131,37 @@ const App: React.FC = () => {
   };
 
   const handleRegisterClient = async (formData: ClientFormData) => {
-    if (!session?.user) return;
+    if (!session?.user) {
+      alert('You must be logged in to register clients.');
+      return;
+    }
+
     try {
       const payload = mapToDB(formData, session.user.id);
+      console.log('Attempting to register client with payload:', payload);
+
       const { data, error } = await supabase
         .from('clients')
         .insert([payload])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error response:', error);
+        throw error;
+      }
       
       if (data && data.length > 0) {
         const newClient = mapFromDB(data[0]);
         setClients(prev => [newClient, ...prev]);
         setCopyingClient(null);
+      } else {
+        console.warn('No data returned from Supabase after insert.');
       }
     } catch (err: any) {
-      console.error('Registration error:', err);
-      alert('Registration failed: ' + (err.message || 'Check your database connection'));
+      console.error('Registration operation failed:', err);
+      // Detailed error message for the user
+      const msg = err.message || 'Check your database connection and table schema.';
+      alert(`Registration failed: ${msg}`);
       throw err;
     }
   };

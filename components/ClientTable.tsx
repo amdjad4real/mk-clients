@@ -112,7 +112,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
               <th className="px-6 py-4">{t.photo}</th>
-              <th className="px-6 py-4">{t.id}</th>
               <th className="px-6 py-4">{t.firstName} & {t.lastName}</th>
               <th className="px-6 py-4">{t.passportNumber}</th>
               <th className="px-6 py-4">{t.category}</th>
@@ -130,7 +129,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                       {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-slate-400" />}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-mono text-blue-600 dark:text-blue-400">{client.id}</td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-bold">{client.firstName} {client.lastName}</div>
                     <div className="text-xs text-slate-500">{client.dob}</div>
@@ -164,7 +162,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-500 italic">No clients found.</td></tr>
+              <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">No clients found.</td></tr>
             )}
           </tbody>
         </table>

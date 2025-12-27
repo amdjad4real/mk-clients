@@ -69,7 +69,7 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
                 <div className="p-2 bg-white rounded-xl shadow-lg">
                   <ShieldCheck className="w-8 h-8 text-blue-600" />
                 </div>
-                <h1 className="text-xl font-black tracking-tighter uppercase leading-none">MK SERVICE DE VISA</h1>
+                <h1 className="text-xl font-black tracking-tighter uppercase leading-none">MK Clients</h1>
               </div>
 
               <div className="pt-4">
