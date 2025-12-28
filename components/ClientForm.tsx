@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, Calendar, Loader2 } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
 import { CATEGORIES } from '../constants';
-import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, formatDateInput, isValidDate } from '../utils/helpers';
+import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate } from '../utils/helpers';
 
 interface ClientFormProps {
   lang: Language;
@@ -51,16 +51,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     }
   }, [initialData]);
 
-  const convertDate = (dateStr: string): string => {
-    if (!dateStr) return '';
-    const parts = dateStr.trim().split('-');
-    if (parts.length === 3) {
-      const [y, m, d] = parts;
-      return `${m}/${d}/${y}`;
-    }
-    return dateStr;
-  };
-
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -82,13 +72,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             newFormData.lastName = value;
           }
         } else if (keyLower.includes('dob')) {
-          newFormData.dob = convertDate(value);
+          newFormData.dob = normalizeToDashDate(value);
         } else if (keyLower.includes('passport')) {
           newFormData.passportNumber = value.replace(/\D/g, '').substring(0, 9);
         } else if (keyLower.includes('issue')) {
-          newFormData.issueDate = convertDate(value);
+          newFormData.issueDate = normalizeToDashDate(value);
         } else if (keyLower.includes('expiry')) {
-          newFormData.expiryDate = convertDate(value);
+          newFormData.expiryDate = normalizeToDashDate(value);
         } else if (keyLower.includes('place')) {
           newFormData.placeOfIssue = value;
         } else if (keyLower.includes('category')) {
@@ -97,13 +87,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             newFormData.category = cat;
           }
         } else if (keyLower.includes('appointment date') || keyLower.includes('date de rendez-vous')) {
-          newFormData.appointmentDate = value;
+          newFormData.appointmentDate = normalizeToDashDate(value);
         } else if (keyLower.includes('previous visa')) {
           newFormData.previousVisaNumber = value;
         } else if (keyLower.includes('visa from')) {
-          newFormData.visaFrom = convertDate(value);
+          newFormData.visaFrom = normalizeToDashDate(value);
         } else if (keyLower.includes('visa to')) {
-          newFormData.visaTo = convertDate(value);
+          newFormData.visaTo = normalizeToDashDate(value);
         }
       });
 
@@ -160,13 +150,11 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         await onSubmit(formData);
         handleClear();
       } catch (err) {
-        // App.tsx handles the alert
         console.error('Form submission failed:', err);
       } finally {
         setIsSubmitting(false);
       }
     } else {
-      // Scroll to the first error
       const firstError = document.querySelector('.text-red-500');
       if (firstError) {
         firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -211,7 +199,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
   ) => {
     const error = errors[field];
     const isPayment = ['cardNumber', 'cardHolderName', 'paymentExpiry', 'cvv'].includes(field);
-    const isDateField = ['dob', 'issueDate', 'expiryDate', 'visaFrom', 'visaTo'].includes(field);
+    const isDateField = ['dob', 'issueDate', 'expiryDate', 'visaFrom', 'visaTo', 'appointmentDate'].includes(field);
     
     const value = isPayment 
       ? (field === 'paymentExpiry' ? formData.payment.expiryDate : (formData.payment as any)[field])
@@ -238,10 +226,10 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           </select>
         ) : (
           <input
-            type={type === 'date' ? 'date' : (isDateField || field === 'paymentExpiry' ? 'text' : type)}
+            type={isDateField ? 'date' : type}
             value={value}
             disabled={isSubmitting}
-            placeholder={isDateField ? 'MM/DD/YYYY' : placeholder}
+            placeholder={placeholder}
             onChange={(e) => {
               const val = e.target.value;
               if (isPayment) {
@@ -253,13 +241,10 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                   payment: { ...prev.payment, [field === 'paymentExpiry' ? 'expiryDate' : field]: formatted }
                 }));
               } else {
-                let finalVal = val;
-                if (isDateField) finalVal = formatDateInput(val);
-                setFormData(prev => ({ ...prev, [field]: finalVal }));
+                setFormData(prev => ({ ...prev, [field]: val }));
               }
             }}
             className={inputClasses}
-            maxLength={isDateField ? 10 : undefined}
           />
         )}
         {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
@@ -323,10 +308,10 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {renderInput(t.expiryDate, 'expiryDate')}
             {renderInput(t.placeOfIssue, 'placeOfIssue')}
             {renderInput(t.category, 'category', 'select', true, '', CATEGORIES)}
-            {renderInput(t.appointmentDate, 'appointmentDate', 'date', true)}
+            {renderInput(t.appointmentDate, 'appointmentDate')}
             {renderInput(t.prevVisa, 'previousVisaNumber', 'text', false)}
-            {renderInput(t.visaFrom, 'visaFrom', 'text', false)}
-            {renderInput(t.visaTo, 'visaTo', 'text', false)}
+            {renderInput(t.visaFrom, 'visaFrom', 'date', false)}
+            {renderInput(t.visaTo, 'visaTo', 'date', false)}
             {renderInput(t.phoneNumber, 'phoneNumber', 'tel', false)}
           </div>
         </div>

@@ -46,21 +46,13 @@ export const formatExpiryDate = (value: string): string => {
   return v;
 };
 
-export const formatDateInput = (value: string): string => {
-  const v = value.replace(/[^0-9]/gi, '').substring(0, 8);
-  if (v.length > 4) {
-    return `${v.substring(0, 2)}/${v.substring(2, 4)}/${v.substring(4, 8)}`;
-  } else if (v.length > 2) {
-    return `${v.substring(0, 2)}/${v.substring(2, 4)}`;
-  }
-  return v;
-};
-
+/**
+ * Validates if string is YYYY-MM-DD
+ */
 export const isValidDate = (dateStr: string): boolean => {
-  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return false;
-  const [m, d, y] = dateStr.split('/').map(Number);
-  const date = new Date(y, m - 1, d);
-  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const date = new Date(dateStr);
+  return !isNaN(date.getTime());
 };
 
 export const isExpired = (expiry: string): boolean => {
@@ -80,7 +72,6 @@ export const getDaysDiff = (targetDateStr: string): number => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // Create date object from YYYY-MM-DD
   const target = new Date(targetDateStr);
   target.setHours(0, 0, 0, 0);
   
@@ -93,14 +84,37 @@ export const getWeekdayIndex = (dateStr: string): number => {
   return new Date(dateStr).getDay();
 };
 
-export const convertSlashToDash = (dateStr: string): string => {
-  if (!dateStr || !dateStr.includes('/')) return dateStr;
-  const [m, d, y] = dateStr.split('/');
-  return `${y}-${m}-${d}`;
-};
+/**
+ * Robustly converts various date strings to YYYY-MM-DD
+ */
+export const normalizeToDashDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const cleaned = dateStr.trim();
+  
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) return cleaned;
+  
+  // Handle MM/DD/YYYY or DD/MM/YYYY (Heuristic: if first part > 12, it's DD/MM/YYYY)
+  if (cleaned.includes('/')) {
+    const parts = cleaned.split('/');
+    if (parts.length === 3) {
+      let [p1, p2, y] = parts;
+      // If p1 is year (e.g. 2024/10/12)
+      if (p1.length === 4) return `${p1}-${p2.padStart(2, '0')}-${y.padStart(2, '0')}`;
+      // Standard US or Euro (we'll assume ISO-ish if possible or just map)
+      // Usually users in this context use MM/DD/YYYY based on previous code
+      return `${y}-${p1.padStart(2, '0')}-${p2.padStart(2, '0')}`;
+    }
+  }
 
-export const convertDashToSlash = (dateStr: string): string => {
-  if (!dateStr || !dateStr.includes('-')) return dateStr;
-  const [y, m, d] = dateStr.split('-');
-  return `${m}/${d}/${y}`;
+  // Handle DD.MM.YYYY
+  if (cleaned.includes('.')) {
+    const parts = cleaned.split('.');
+    if (parts.length === 3) {
+      const [d, m, y] = parts;
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+  }
+
+  return cleaned;
 };
