@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Calendar, Clock } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Clock } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getDaysDiff, getWeekdayIndex } from '../utils/helpers';
 
@@ -17,12 +16,12 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10; 
 
   const filteredClients = clients.filter(c => 
     `${c.firstName} ${c.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
     c.passportNumber.includes(search) ||
-    c.phoneNumber.includes(search) ||
+    (c.phoneNumber && c.phoneNumber.includes(search)) ||
     c.category.toLowerCase().includes(search.toLowerCase()) ||
     c.id.toLowerCase().includes(search.toLowerCase())
   );
@@ -106,7 +105,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
             placeholder={t.search}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           />
         </div>
         <button onClick={() => setCurrentPage(1)} className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
@@ -123,6 +122,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
               <th className="px-6 py-4">{t.firstName} & {t.lastName}</th>
               <th className="px-6 py-4">{t.passportNumber}</th>
               <th className="px-6 py-4">{t.category}</th>
+              <th className="px-6 py-4">{t.prevVisa}</th>
               <th className="px-6 py-4">{t.dayStatus}</th>
               <th className="px-6 py-4">{t.payment}</th>
               <th className="px-6 py-4 text-center">{t.actions}</th>
@@ -138,14 +138,32 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-bold">{client.firstName} {client.lastName}</div>
-                    <div className="text-xs text-slate-500">{client.dob}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                      {client.firstName} {client.lastName}
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{client.dob}</div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium">{client.passportNumber}</td>
+                  <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">
+                    {client.passportNumber}
+                  </td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 rounded-md text-xs font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                    <span className="px-2 py-1 rounded-md text-[10px] font-black bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 uppercase tracking-tight">
                       {client.category}
                     </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {client.previousVisaNumber ? (
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-bold text-slate-700 dark:text-slate-200">{client.previousVisaNumber}</div>
+                        {(client.visaFrom || client.visaTo) && (
+                          <div className="text-[10px] text-slate-500 font-medium">
+                            {client.visaFrom || '...'} / {client.visaTo || '...'}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">N/A</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     {getStatusBadge(client.appointmentDate)}
@@ -170,7 +188,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">No clients found.</td></tr>
+              <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-500 italic">No clients found.</td></tr>
             )}
           </tbody>
         </table>

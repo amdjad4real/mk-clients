@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
@@ -132,7 +131,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     }
   }, [initialData]);
 
-  // Handle click outside calendar to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
@@ -313,7 +311,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
     const inputClasses = `w-full px-4 py-2 rounded-lg border ${
       error ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300 dark:border-slate-600'
-    } bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`;
+    } bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400`;
 
     return (
       <div className="space-y-1 relative">
