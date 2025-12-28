@@ -106,11 +106,21 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    const dateFields = ['dob', 'issueDate', 'expiryDate', 'appointmentDate'];
+    
     if (!formData.lastName.trim()) newErrors.lastName = t.validation.required;
     if (!formData.firstName.trim()) newErrors.firstName = t.validation.required;
     
-    if (!formData.dob.trim()) newErrors.dob = t.validation.required;
-    else if (!isValidDate(formData.dob)) newErrors.dob = t.validation.invalidExpiry;
+    dateFields.forEach(field => {
+      const val = (formData as any)[field];
+      if (!val.trim()) {
+        newErrors[field] = t.validation.required;
+      } else if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+        newErrors[field] = 'Format: YYYY-MM-DD';
+      } else if (!isValidDate(val)) {
+        newErrors[field] = t.validation.invalidExpiry;
+      }
+    });
 
     if (!formData.passportNumber.trim()) {
       newErrors.passportNumber = t.validation.required;
@@ -118,16 +128,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       newErrors.passportNumber = t.validation.passportLength;
     }
 
-    if (!formData.issueDate.trim()) newErrors.issueDate = t.validation.required;
-    else if (!isValidDate(formData.issueDate)) newErrors.issueDate = t.validation.invalidExpiry;
-
-    if (!formData.expiryDate.trim()) newErrors.expiryDate = t.validation.required;
-    else if (!isValidDate(formData.expiryDate)) newErrors.expiryDate = t.validation.invalidExpiry;
-
     if (!formData.placeOfIssue.trim()) newErrors.placeOfIssue = t.validation.required;
     if (!formData.category) newErrors.category = t.validation.required;
-    if (!formData.appointmentDate) newErrors.appointmentDate = t.validation.required;
     
+    // Optional date fields
+    if (formData.visaFrom && !/^\d{4}-\d{2}-\d{2}$/.test(formData.visaFrom)) newErrors.visaFrom = 'Format: YYYY-MM-DD';
+    if (formData.visaTo && !/^\d{4}-\d{2}-\d{2}$/.test(formData.visaTo)) newErrors.visaTo = 'Format: YYYY-MM-DD';
+
     const p = formData.payment;
     const hasSomePaymentInfo = p.cardNumber || p.cardHolderName || p.expiryDate || p.cvv;
     if (hasSomePaymentInfo) {
@@ -226,10 +233,10 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           </select>
         ) : (
           <input
-            type={isDateField ? 'date' : type}
+            type="text"
             value={value}
             disabled={isSubmitting}
-            placeholder={placeholder}
+            placeholder={isDateField ? 'YYYY-MM-DD' : placeholder}
             onChange={(e) => {
               const val = e.target.value;
               if (isPayment) {
@@ -302,16 +309,16 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
             {renderInput(t.lastName, 'lastName')}
             {renderInput(t.firstName, 'firstName')}
-            {renderInput(t.dob, 'dob')}
+            {renderInput(t.dob, 'dob', 'text', true, 'YYYY-MM-DD')}
             {renderInput(t.passportNumber, 'passportNumber', 'text', true, '123456789')}
-            {renderInput(t.issueDate, 'issueDate')}
-            {renderInput(t.expiryDate, 'expiryDate')}
+            {renderInput(t.issueDate, 'issueDate', 'text', true, 'YYYY-MM-DD')}
+            {renderInput(t.expiryDate, 'expiryDate', 'text', true, 'YYYY-MM-DD')}
             {renderInput(t.placeOfIssue, 'placeOfIssue')}
             {renderInput(t.category, 'category', 'select', true, '', CATEGORIES)}
-            {renderInput(t.appointmentDate, 'appointmentDate')}
+            {renderInput(t.appointmentDate, 'appointmentDate', 'text', true, 'YYYY-MM-DD')}
             {renderInput(t.prevVisa, 'previousVisaNumber', 'text', false)}
-            {renderInput(t.visaFrom, 'visaFrom', 'date', false)}
-            {renderInput(t.visaTo, 'visaTo', 'date', false)}
+            {renderInput(t.visaFrom, 'visaFrom', 'text', false, 'YYYY-MM-DD')}
+            {renderInput(t.visaTo, 'visaTo', 'text', false, 'YYYY-MM-DD')}
             {renderInput(t.phoneNumber, 'phoneNumber', 'tel', false)}
           </div>
         </div>
