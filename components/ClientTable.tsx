@@ -43,7 +43,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
       `${t.expiryDate}: ${client.expiryDate}`,
       `${t.placeOfIssue}: ${client.placeOfIssue}`,
       `${t.category}: ${client.category}`,
-      `${t.appointmentDate}: ${client.appointmentDate}`,
+      client.appointmentDate ? `${t.appointmentDate}: ${client.appointmentDate}` : '',
       client.previousVisaNumber ? `${t.prevVisa}: ${client.previousVisaNumber}` : '',
       client.visaFrom ? `${t.visaFrom}: ${client.visaFrom}` : '',
       client.visaTo ? `${t.visaTo}: ${client.visaTo}` : '',
@@ -61,6 +61,14 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   };
 
   const getStatusBadge = (dateStr: string) => {
+    if (!dateStr) {
+      return (
+        <div className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-center bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500">
+          ---
+        </div>
+      );
+    }
+    
     const diff = getDaysDiff(dateStr);
     const weekdayIdx = getWeekdayIndex(dateStr);
     const dayName = t.days[weekdayIdx];

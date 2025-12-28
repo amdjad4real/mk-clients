@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, CreditCard, User, ClipboardPaste, Calendar, Loader2 } from 'lucide-react';
+import { Camera, CreditCard, User, ClipboardPaste, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
 import { CATEGORIES } from '../constants';
 import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate } from '../utils/helpers';
@@ -12,6 +12,85 @@ interface ClientFormProps {
   initialData?: Partial<ClientFormData>;
   onCancel?: () => void;
 }
+
+const CalendarPicker: React.FC<{ 
+  onSelect: (date: string) => void; 
+  onClose: () => void;
+  lang: Language;
+  t: any;
+}> = ({ onSelect, onClose, lang, t }) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+  
+  const month = currentDate.getMonth();
+  const year = currentDate.getFullYear();
+  
+  const monthNames = {
+    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    fr: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+    ar: ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+  };
+
+  const weekDays = {
+    en: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+    fr: ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'],
+    ar: ['أح', 'اث', 'ثل', 'أر', 'خم', 'جم', 'سب']
+  };
+
+  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+  const startDay = firstDayOfMonth(year, month);
+  const totalDays = daysInMonth(year, month);
+
+  const days = [];
+  for (let i = 0; i < startDay; i++) {
+    days.push(<div key={`empty-${i}`} className="h-8 w-8" />);
+  }
+
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    days.push(
+      <button
+        key={d}
+        type="button"
+        onClick={() => {
+          onSelect(dateStr);
+          onClose();
+        }}
+        className="h-8 w-8 flex items-center justify-center text-sm font-bold rounded-lg hover:bg-blue-600 hover:text-white transition-colors text-slate-700 dark:text-slate-200"
+      >
+        {d}
+      </button>
+    );
+  }
+
+  return (
+    <div className="absolute z-50 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-4 w-64 animate-in fade-in zoom-in duration-200 overflow-hidden">
+      <div className="flex items-center justify-between mb-4">
+        <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <ChevronLeft className="w-4 h-4 text-slate-500" />
+        </button>
+        <span className="text-sm font-black text-slate-900 dark:text-white">
+          {(monthNames as any)[lang][month]} {year}
+        </span>
+        <button type="button" onClick={handleNextMonth} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <ChevronRight className="w-4 h-4 text-slate-500" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {(weekDays as any)[lang].map((d: string) => (
+          <div key={d} className="h-8 w-8 flex items-center justify-center text-[10px] font-black text-slate-400 uppercase">
+            {d}
+          </div>
+        ))}
+        {days}
+      </div>
+    </div>
+  );
+};
 
 const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData, onCancel }) => {
   const [formData, setFormData] = useState<ClientFormData>({
@@ -39,7 +118,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -50,6 +131,17 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       }));
     }
   }, [initialData]);
+
+  // Handle click outside calendar to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setShowCalendar(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handlePaste = async () => {
     try {
@@ -106,12 +198,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    const dateFields = ['dob', 'issueDate', 'expiryDate', 'appointmentDate'];
+    const requiredDateFields = ['dob', 'issueDate', 'expiryDate'];
     
     if (!formData.lastName.trim()) newErrors.lastName = t.validation.required;
     if (!formData.firstName.trim()) newErrors.firstName = t.validation.required;
     
-    dateFields.forEach(field => {
+    requiredDateFields.forEach(field => {
       const val = (formData as any)[field];
       if (!val.trim()) {
         newErrors[field] = t.validation.required;
@@ -122,6 +214,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       }
     });
 
+    if (formData.appointmentDate.trim()) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(formData.appointmentDate)) {
+            newErrors.appointmentDate = 'Format: YYYY-MM-DD';
+        } else if (!isValidDate(formData.appointmentDate)) {
+            newErrors.appointmentDate = t.validation.invalidExpiry;
+        }
+    }
+
     if (!formData.passportNumber.trim()) {
       newErrors.passportNumber = t.validation.required;
     } else if (!/^\d{9}$/.test(formData.passportNumber)) {
@@ -131,7 +231,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     if (!formData.placeOfIssue.trim()) newErrors.placeOfIssue = t.validation.required;
     if (!formData.category) newErrors.category = t.validation.required;
     
-    // Optional date fields
     if (formData.visaFrom && !/^\d{4}-\d{2}-\d{2}$/.test(formData.visaFrom)) newErrors.visaFrom = 'Format: YYYY-MM-DD';
     if (formData.visaTo && !/^\d{4}-\d{2}-\d{2}$/.test(formData.visaTo)) newErrors.visaTo = 'Format: YYYY-MM-DD';
 
@@ -217,7 +316,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     } bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`;
 
     return (
-      <div className="space-y-1">
+      <div className="space-y-1 relative">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center">
           {label} {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -232,27 +331,48 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         ) : (
-          <input
-            type="text"
-            value={value}
-            disabled={isSubmitting}
-            placeholder={isDateField ? 'YYYY-MM-DD' : placeholder}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (isPayment) {
-                let formatted = val;
-                if (field === 'cardNumber') formatted = formatCardNumber(val);
-                if (field === 'paymentExpiry') formatted = formatExpiryDate(val);
-                setFormData(prev => ({
-                  ...prev,
-                  payment: { ...prev.payment, [field === 'paymentExpiry' ? 'expiryDate' : field]: formatted }
-                }));
-              } else {
-                setFormData(prev => ({ ...prev, [field]: val }));
-              }
-            }}
-            className={inputClasses}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={value}
+              disabled={isSubmitting}
+              placeholder={isDateField ? 'YYYY-MM-DD' : placeholder}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (isPayment) {
+                  let formatted = val;
+                  if (field === 'cardNumber') formatted = formatCardNumber(val);
+                  if (field === 'paymentExpiry') formatted = formatExpiryDate(val);
+                  setFormData(prev => ({
+                    ...prev,
+                    payment: { ...prev.payment, [field === 'paymentExpiry' ? 'expiryDate' : field]: formatted }
+                  }));
+                } else {
+                  setFormData(prev => ({ ...prev, [field]: val }));
+                }
+              }}
+              className={`${inputClasses} ${field === 'appointmentDate' ? 'pr-10 rtl:pl-10' : ''}`}
+            />
+            {field === 'appointmentDate' && (
+              <div ref={calendarRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors"
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                </button>
+                {showCalendar && (
+                  <CalendarPicker 
+                    lang={lang} 
+                    t={t} 
+                    onSelect={(d) => setFormData(prev => ({ ...prev, appointmentDate: d }))} 
+                    onClose={() => setShowCalendar(false)} 
+                  />
+                )}
+              </div>
+            )}
+          </div>
         )}
         {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
       </div>
@@ -315,7 +435,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {renderInput(t.expiryDate, 'expiryDate', 'text', true, 'YYYY-MM-DD')}
             {renderInput(t.placeOfIssue, 'placeOfIssue')}
             {renderInput(t.category, 'category', 'select', true, '', CATEGORIES)}
-            {renderInput(t.appointmentDate, 'appointmentDate', 'text', true, 'YYYY-MM-DD')}
+            {renderInput(t.appointmentDate, 'appointmentDate', 'text', false, 'YYYY-MM-DD')}
             {renderInput(t.prevVisa, 'previousVisaNumber', 'text', false)}
             {renderInput(t.visaFrom, 'visaFrom', 'text', false, 'YYYY-MM-DD')}
             {renderInput(t.visaTo, 'visaTo', 'text', false, 'YYYY-MM-DD')}
