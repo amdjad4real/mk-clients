@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
@@ -123,11 +124,28 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
   useEffect(() => {
     if (initialData) {
-      setFormData(prev => ({ 
-        ...prev, 
-        ...initialData,
-        payment: { ...prev.payment, ...(initialData.payment || {}) }
-      }));
+      setFormData({
+        lastName: initialData.lastName || '',
+        firstName: initialData.firstName || '',
+        phoneNumber: initialData.phoneNumber || '',
+        dob: initialData.dob || '',
+        passportNumber: initialData.passportNumber || '',
+        issueDate: initialData.issueDate || '',
+        expiryDate: initialData.expiryDate || '',
+        placeOfIssue: initialData.placeOfIssue || '',
+        previousVisaNumber: initialData.previousVisaNumber || '',
+        visaFrom: initialData.visaFrom || '',
+        visaTo: initialData.visaTo || '',
+        category: initialData.category || '',
+        appointmentDate: initialData.appointmentDate || '',
+        photoUrl: initialData.photoUrl || '',
+        payment: {
+          cardNumber: initialData.payment?.cardNumber || '',
+          cardHolderName: initialData.payment?.cardHolderName || '',
+          expiryDate: initialData.payment?.expiryDate || '',
+          cvv: initialData.payment?.cvv || ''
+        }
+      });
     }
   }, [initialData]);
 
@@ -228,9 +246,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
     if (!formData.placeOfIssue.trim()) newErrors.placeOfIssue = t.validation.required;
     if (!formData.category) newErrors.category = t.validation.required;
-    
-    if (formData.visaFrom && !/^\d{4}-\d{2}-\d{2}$/.test(formData.visaFrom)) newErrors.visaFrom = 'Format: YYYY-MM-DD';
-    if (formData.visaTo && !/^\d{4}-\d{2}-\d{2}$/.test(formData.visaTo)) newErrors.visaTo = 'Format: YYYY-MM-DD';
 
     const p = formData.payment;
     const hasSomePaymentInfo = p.cardNumber || p.cardHolderName || p.expiryDate || p.cvv;
@@ -252,7 +267,10 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       setIsSubmitting(true);
       try {
         await onSubmit(formData);
-        handleClear();
+        // Only clear if not in edit mode
+        if (!initialData) {
+          handleClear();
+        }
       } catch (err) {
         console.error('Form submission failed:', err);
       } finally {
@@ -332,7 +350,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           <div className="relative">
             <input
               type="text"
-              value={value}
+              value={value || ''}
               disabled={isSubmitting}
               placeholder={isDateField ? 'YYYY-MM-DD' : placeholder}
               onChange={(e) => {
@@ -397,7 +415,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             <User className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-bold">{t.clientDetails}</h3>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="lg:row-span-2 flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50">
               <div className="relative w-32 h-32 rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center mb-4">
@@ -424,7 +441,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                 <Camera className="w-4 h-4" /> {t.photo}
               </button>
             </div>
-
             {renderInput(t.lastName, 'lastName')}
             {renderInput(t.firstName, 'firstName')}
             {renderInput(t.dob, 'dob', 'text', true, 'YYYY-MM-DD')}
@@ -440,7 +456,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {renderInput(t.phoneNumber, 'phoneNumber', 'tel', false)}
           </div>
         </div>
-
         <div className="space-y-6 pt-4">
           <div className="flex items-center space-x-2 rtl:space-x-reverse border-b dark:border-slate-700 pb-2">
             <CreditCard className="w-5 h-5 text-blue-600" />
@@ -453,7 +468,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {renderInput(t.cvv, 'cvv', 'text', false, '***')}
           </div>
         </div>
-
         <div className="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 rtl:space-x-reverse pt-6 border-t dark:border-slate-700">
           <button 
             type="button" 
@@ -484,7 +498,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                 <span>Processing...</span>
               </>
             ) : (
-              initialData && initialData.firstName ? t.saveChanges : t.register
+              initialData ? t.saveChanges : t.register
             )}
           </button>
         </div>

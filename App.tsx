@@ -27,7 +27,6 @@ const App: React.FC = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [copyingClient, setCopyingClient] = useState<Partial<ClientFormData> | null>(null);
 
-  // Auth Initialization
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -41,7 +40,6 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sync Preferences
   useEffect(() => {
     localStorage.setItem('lang', lang);
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -57,7 +55,6 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  // Client Data Mapping Functions
   const mapToDB = (data: ClientFormData, userId: string) => ({
     user_id: userId,
     last_name: data.lastName,
@@ -72,7 +69,7 @@ const App: React.FC = () => {
     visa_from: data.visaFrom,
     visa_to: data.visaTo,
     category: data.category,
-    appointment_date: data.appointmentDate, // This matches the database column name
+    appointment_date: data.appointmentDate,
     photo_url: data.photoUrl,
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
@@ -131,37 +128,22 @@ const App: React.FC = () => {
   };
 
   const handleRegisterClient = async (formData: ClientFormData) => {
-    if (!session?.user) {
-      alert('You must be logged in to register clients.');
-      return;
-    }
-
+    if (!session?.user) return;
     try {
       const payload = mapToDB(formData, session.user.id);
-      console.log('Attempting to register client with payload:', payload);
-
       const { data, error } = await supabase
         .from('clients')
         .insert([payload])
         .select();
 
-      if (error) {
-        console.error('Supabase error response:', error);
-        throw error;
-      }
-      
+      if (error) throw error;
       if (data && data.length > 0) {
-        const newClient = mapFromDB(data[0]);
-        setClients(prev => [newClient, ...prev]);
+        setClients(prev => [mapFromDB(data[0]), ...prev]);
         setCopyingClient(null);
-      } else {
-        console.warn('No data returned from Supabase after insert.');
       }
     } catch (err: any) {
-      console.error('Registration operation failed:', err);
-      // Detailed error message for the user
-      const msg = err.message || 'Check your database connection and table schema.';
-      alert(`Registration failed: ${msg}`);
+      console.error('Registration failed:', err);
+      alert('Registration failed: ' + err.message);
       throw err;
     }
   };
@@ -170,14 +152,18 @@ const App: React.FC = () => {
     if (!session?.user) return;
     try {
       const payload = mapToDB(formData, session.user.id);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('clients')
         .update(payload)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
       if (error) throw error;
       
-      setClients(prev => prev.map(c => c.id === id ? { ...mapFromDB(payload), id } : c));
+      if (data && data.length > 0) {
+        const updatedClient = mapFromDB(data[0]);
+        setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
+      }
       setEditingClient(null);
     } catch (err: any) {
       console.error('Update failed:', err);
@@ -189,18 +175,12 @@ const App: React.FC = () => {
   const handleDeleteClient = async (id: string) => {
     const t = TRANSLATIONS[lang];
     if (!window.confirm(t.confirmDelete)) return;
-    
     try {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('clients').delete().eq('id', id);
       if (error) throw error;
       setClients(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Delete failed');
     }
   };
 
@@ -238,74 +218,36 @@ const App: React.FC = () => {
   }
 
   if (!session) {
-    return (
-      <Auth 
-        lang={lang} 
-        t={t} 
-        theme={theme} 
-        setTheme={setTheme} 
-        setLang={setLang}
-      />
-    );
+    return <Auth lang={lang} t={t} theme={theme} setTheme={setTheme} setLang={setLang} />;
   }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-12 transition-colors duration-200">
-      <Navbar 
-        lang={lang} 
-        setLang={setLang} 
-        theme={theme} 
-        setTheme={setTheme} 
-        t={t} 
-        onLogout={handleLogout}
-        userEmail={session.user.email || ''}
-      />
-      
+      <Navbar lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} t={t} onLogout={handleLogout} userEmail={session.user.email || ''} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
         <section>
           <div className="flex items-center space-x-2 rtl:space-x-reverse mb-6">
             <h2 className="text-2xl font-bold">{t.addNewClient}</h2>
           </div>
-          <ClientForm 
-            key={copyingClient ? 'copy-active' : 'new-form'}
-            lang={lang} 
-            t={t} 
-            onSubmit={handleRegisterClient}
-            initialData={copyingClient || undefined}
-          />
+          <ClientForm key={copyingClient ? 'copy-active' : 'new-form'} lang={lang} t={t} onSubmit={handleRegisterClient} initialData={copyingClient || undefined} />
         </section>
-
         <section>
           <div className="flex items-center space-x-2 rtl:space-x-reverse mb-6">
             <h2 className="text-2xl font-bold">{t.registeredClients}</h2>
             {isFetchingClients && <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>}
           </div>
-          <ClientTable 
-            clients={clients} 
-            t={t} 
-            lang={lang}
-            onEdit={handleEditClient}
-            onDelete={handleDeleteClient}
-            onCopy={handleCopyClient}
-          />
+          <ClientTable clients={clients} t={t} lang={lang} onEdit={handleEditClient} onDelete={handleDeleteClient} onCopy={handleCopyClient} />
         </section>
       </main>
-
       {editingClient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
               <h3 className="text-xl font-bold">{t.edit} - {editingClient.firstName} {editingClient.lastName}</h3>
-              <button onClick={() => setEditingClient(null)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">✕</button>
+              <button onClick={() => setEditingClient(null)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-black text-2xl">✕</button>
             </div>
             <div className="p-6">
-              <ClientForm 
-                lang={lang} 
-                t={t} 
-                onSubmit={(data) => handleUpdateClient(editingClient.id, data)}
-                initialData={editingClient as any}
-                onCancel={() => setEditingClient(null)}
-              />
+              <ClientForm lang={lang} t={t} onSubmit={(data) => handleUpdateClient(editingClient.id, data)} initialData={editingClient} onCancel={() => setEditingClient(null)} />
             </div>
           </div>
         </div>
