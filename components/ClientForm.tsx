@@ -161,10 +161,44 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
   const handlePaste = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      const lines = text.split('\n');
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) return;
+
       const newFormData = { ...formData };
 
+      // Case 1: Tab/Space separated format (e.g., HAMADI ABDELKRIM 1997-01-16 ...)
+      // Split by tab (\t) or 2+ spaces (\s{2,})
+      const parts = text.split(/\t|\s{2,}/).map(p => p.trim()).filter(Boolean);
+      
+      if (parts.length >= 7 && !text.includes(':')) {
+        // Split Full Name: First part = Last Name, rest = First Name
+        const nameParts = parts[0].split(/\s+/);
+        newFormData.lastName = nameParts[0] || '';
+        newFormData.firstName = nameParts.slice(1).join(' ') || '';
+        
+        newFormData.dob = normalizeToDashDate(parts[1]);
+        newFormData.passportNumber = parts[2].replace(/\D/g, '').substring(0, 9);
+        newFormData.issueDate = normalizeToDashDate(parts[3]);
+        newFormData.expiryDate = normalizeToDashDate(parts[4]);
+        newFormData.placeOfIssue = parts[5];
+        
+        const cat = parts[6].toUpperCase();
+        if (CATEGORIES.includes(cat)) {
+          newFormData.category = cat;
+        }
+
+        // Optional visa details
+        if (parts.length >= 8) newFormData.previousVisaNumber = parts[7];
+        if (parts.length >= 9) newFormData.visaFrom = normalizeToDashDate(parts[8]);
+        if (parts.length >= 10) newFormData.visaTo = normalizeToDashDate(parts[9]);
+
+        setFormData(newFormData);
+        setErrors({});
+        return;
+      }
+
+      // Case 2: Standard Key:Value format
+      const lines = text.split('\n');
       lines.forEach(line => {
         const [key, ...rest] = line.split(':');
         if (!rest.length) return;
@@ -172,13 +206,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         const keyLower = key.toLowerCase();
 
         if (keyLower.includes('name')) {
-          const names = value.split(' ');
-          if (names.length >= 2) {
-            newFormData.lastName = names[0];
-            newFormData.firstName = names.slice(1).join(' ');
-          } else {
-            newFormData.lastName = value;
-          }
+          const names = value.split(/\s+/);
+          newFormData.lastName = names[0] || '';
+          newFormData.firstName = names.slice(1).join(' ') || '';
         } else if (keyLower.includes('dob')) {
           newFormData.dob = normalizeToDashDate(value);
         } else if (keyLower.includes('passport')) {
@@ -267,7 +297,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       setIsSubmitting(true);
       try {
         await onSubmit(formData);
-        // Only clear if not in edit mode
         if (!initialData) {
           handleClear();
         }
