@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Clock } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Clock, CreditCard } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getDaysDiff, getWeekdayIndex } from '../utils/helpers';
 
@@ -16,6 +16,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
   const itemsPerPage = 10; 
 
   const filteredClients = clients.filter(c => 
@@ -56,6 +57,26 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     navigator.clipboard.writeText(details).then(() => {
       setCopiedId(client.id);
       setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
+  const handleCopyPaymentAction = (client: Client) => {
+    // Strip all spaces from card number or mask to ensure format like 6280703004670888
+    const rawCard = client.payment.cardNumber || client.payment.cardMask || '';
+    const cleanCard = rawCard.replace(/\s+/g, '');
+
+    const details = [
+      `${t.lastName}: ${client.lastName}`,
+      `${t.firstName}: ${client.firstName}`,
+      `${t.cardNumber}: ${cleanCard}`,
+      `${t.cardHolder}: ${client.payment.cardHolderName}`,
+      `${t.expiryDate}: ${client.payment.expiryDate}`,
+      `${t.cvv}: ${client.payment.cvv || '***'}`,
+    ].join('\n');
+
+    navigator.clipboard.writeText(details).then(() => {
+      setCopiedPaymentId(client.id);
+      setTimeout(() => setCopiedPaymentId(null), 2000);
     });
   };
 
@@ -179,6 +200,9 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                       </button>
                       <button onClick={() => handleCopyAction(client)} title={t.copy} className={`p-1.5 rounded-lg transition-colors ${copiedId === client.id ? 'text-green-500 bg-green-50 dark:bg-green-900/20' : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'}`}>
                         {copiedId === client.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                      <button onClick={() => handleCopyPaymentAction(client)} title={t.copyPayment} className={`p-1.5 rounded-lg transition-colors ${copiedPaymentId === client.id ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'}`}>
+                        {copiedPaymentId === client.id ? <Check className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
                       </button>
                       <button onClick={() => onDelete(client.id)} title={t.delete} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                         <Trash2 className="w-4 h-4" />
