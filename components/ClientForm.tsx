@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
@@ -125,14 +124,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
   useEffect(() => {
     if (initialData) {
       setFormData({
-        lastName: initialData.lastName || '',
-        firstName: initialData.firstName || '',
+        lastName: (initialData.lastName || '').toUpperCase(),
+        firstName: (initialData.firstName || '').toUpperCase(),
         phoneNumber: initialData.phoneNumber || '',
         dob: initialData.dob || '',
         passportNumber: initialData.passportNumber || '',
         issueDate: initialData.issueDate || '',
         expiryDate: initialData.expiryDate || '',
-        placeOfIssue: initialData.placeOfIssue || '',
+        placeOfIssue: (initialData.placeOfIssue || '').toUpperCase(),
         previousVisaNumber: initialData.previousVisaNumber || '',
         visaFrom: initialData.visaFrom || '',
         visaTo: initialData.visaTo || '',
@@ -141,7 +140,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         photoUrl: initialData.photoUrl || '',
         payment: {
           cardNumber: initialData.payment?.cardNumber || '',
-          cardHolderName: initialData.payment?.cardHolderName || '',
+          cardHolderName: (initialData.payment?.cardHolderName || '').toUpperCase(),
           expiryDate: initialData.payment?.expiryDate || '',
           cvv: initialData.payment?.cvv || ''
         }
@@ -173,14 +172,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       if (parts.length >= 7 && !text.includes(':')) {
         // Split Full Name: First part = Last Name, rest = First Name
         const nameParts = parts[0].split(/\s+/);
-        newFormData.lastName = nameParts[0] || '';
-        newFormData.firstName = nameParts.slice(1).join(' ') || '';
+        newFormData.lastName = (nameParts[0] || '').toUpperCase();
+        newFormData.firstName = (nameParts.slice(1).join(' ') || '').toUpperCase();
         
         newFormData.dob = normalizeToDashDate(parts[1]);
         newFormData.passportNumber = parts[2].replace(/\D/g, '').substring(0, 9);
         newFormData.issueDate = normalizeToDashDate(parts[3]);
         newFormData.expiryDate = normalizeToDashDate(parts[4]);
-        newFormData.placeOfIssue = parts[5];
+        newFormData.placeOfIssue = parts[5].toUpperCase();
         
         const cat = parts[6].toUpperCase();
         if (CATEGORIES.includes(cat)) {
@@ -207,8 +206,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
         if (keyLower.includes('name')) {
           const names = value.split(/\s+/);
-          newFormData.lastName = names[0] || '';
-          newFormData.firstName = names.slice(1).join(' ') || '';
+          newFormData.lastName = (names[0] || '').toUpperCase();
+          newFormData.firstName = (names.slice(1).join(' ') || '').toUpperCase();
         } else if (keyLower.includes('dob')) {
           newFormData.dob = normalizeToDashDate(value);
         } else if (keyLower.includes('passport')) {
@@ -218,7 +217,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         } else if (keyLower.includes('expiry')) {
           newFormData.expiryDate = normalizeToDashDate(value);
         } else if (keyLower.includes('place')) {
-          newFormData.placeOfIssue = value;
+          newFormData.placeOfIssue = value.toUpperCase();
         } else if (keyLower.includes('category')) {
           const cat = value.toUpperCase();
           if (CATEGORIES.includes(cat)) {
@@ -296,7 +295,19 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     if (validate()) {
       setIsSubmitting(true);
       try {
-        await onSubmit(formData);
+        // Submission data is already capitalized by App.tsx mapToDB, 
+        // but we'll ensure it here too for the onSubmit callback.
+        const capitalizedData: ClientFormData = {
+          ...formData,
+          lastName: formData.lastName.toUpperCase(),
+          firstName: formData.firstName.toUpperCase(),
+          placeOfIssue: formData.placeOfIssue.toUpperCase(),
+          payment: {
+            ...formData.payment,
+            cardHolderName: formData.payment.cardHolderName.toUpperCase()
+          }
+        };
+        await onSubmit(capitalizedData);
         if (!initialData) {
           handleClear();
         }
@@ -351,6 +362,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     const error = errors[field];
     const isPayment = ['cardNumber', 'cardHolderName', 'paymentExpiry', 'cvv'].includes(field);
     const isDateField = ['dob', 'issueDate', 'expiryDate', 'visaFrom', 'visaTo', 'appointmentDate'].includes(field);
+    const isCapitalizedField = ['lastName', 'firstName', 'placeOfIssue', 'cardHolderName'].includes(field);
     
     const value = isPayment 
       ? (field === 'paymentExpiry' ? formData.payment.expiryDate : (formData.payment as any)[field])
@@ -358,7 +370,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
     const inputClasses = `w-full px-4 py-2 rounded-lg border ${
       error ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300 dark:border-slate-600'
-    } bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400`;
+    } bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 ${
+      isCapitalizedField ? 'uppercase' : ''
+    }`;
 
     return (
       <div className="space-y-1 relative">
@@ -388,12 +402,15 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                   let formatted = val;
                   if (field === 'cardNumber') formatted = formatCardNumber(val);
                   if (field === 'paymentExpiry') formatted = formatExpiryDate(val);
+                  if (field === 'cardHolderName') formatted = val.toUpperCase();
                   setFormData(prev => ({
                     ...prev,
                     payment: { ...prev.payment, [field === 'paymentExpiry' ? 'expiryDate' : field]: formatted }
                   }));
                 } else {
-                  setFormData(prev => ({ ...prev, [field]: val }));
+                  let newVal = val;
+                  if (isCapitalizedField) newVal = val.toUpperCase();
+                  setFormData(prev => ({ ...prev, [field]: newVal }));
                 }
               }}
               className={`${inputClasses} ${field === 'appointmentDate' ? 'pr-10 rtl:pl-10' : ''}`}

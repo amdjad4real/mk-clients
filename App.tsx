@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Language, Theme, Client, ClientFormData } from './types.ts';
 import { TRANSLATIONS } from './constants.tsx';
@@ -57,14 +56,14 @@ const App: React.FC = () => {
 
   const mapToDB = (data: ClientFormData, userId: string) => ({
     user_id: userId,
-    last_name: data.lastName,
-    first_name: data.firstName,
+    last_name: (data.lastName || '').trim().toUpperCase(),
+    first_name: (data.firstName || '').trim().toUpperCase(),
     phone_number: data.phoneNumber,
     dob: data.dob,
     passport_number: data.passportNumber,
     issue_date: data.issueDate,
     expiry_date: data.expiryDate,
-    place_of_issue: data.placeOfIssue,
+    place_of_issue: (data.placeOfIssue || '').trim().toUpperCase(),
     previous_visa_number: data.previousVisaNumber,
     visa_from: data.visaFrom,
     visa_to: data.visaTo,
@@ -74,7 +73,7 @@ const App: React.FC = () => {
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
       expiryDate: data.payment.expiryDate || 'N/A',
-      cardHolderName: data.payment.cardHolderName || 'N/A',
+      cardHolderName: (data.payment.cardHolderName || 'N/A').toUpperCase(),
       cardNumber: data.payment.cardNumber, 
       cvv: data.payment.cvv
     }
@@ -82,21 +81,24 @@ const App: React.FC = () => {
 
   const mapFromDB = (dbItem: any): Client => ({
     id: dbItem.id,
-    lastName: dbItem.last_name || dbItem.lastName,
-    firstName: dbItem.first_name || dbItem.firstName,
+    lastName: (dbItem.last_name || dbItem.lastName || '').trim().toUpperCase(),
+    firstName: (dbItem.first_name || dbItem.firstName || '').trim().toUpperCase(),
     phoneNumber: dbItem.phone_number || dbItem.phoneNumber,
     dob: dbItem.dob,
     passportNumber: dbItem.passport_number || dbItem.passportNumber,
     issueDate: dbItem.issue_date || dbItem.issueDate,
     expiryDate: dbItem.expiry_date || dbItem.expiryDate,
-    placeOfIssue: dbItem.place_of_issue || dbItem.placeOfIssue,
+    placeOfIssue: (dbItem.place_of_issue || dbItem.placeOfIssue || '').trim().toUpperCase(),
     previousVisaNumber: dbItem.previous_visa_number || dbItem.previousVisaNumber,
     visaFrom: dbItem.visa_from || dbItem.visaFrom,
     visaTo: dbItem.visa_to || dbItem.visaTo,
     category: dbItem.category,
     appointmentDate: dbItem.appointment_date || dbItem.appointmentDate,
     photoUrl: dbItem.photo_url || dbItem.photoUrl,
-    payment: dbItem.payment
+    payment: {
+      ...dbItem.payment,
+      cardHolderName: (dbItem.payment?.cardHolderName || '').toUpperCase()
+    }
   });
 
   const fetchClients = async () => {
@@ -190,11 +192,11 @@ const App: React.FC = () => {
 
   const handleCopyClient = (client: Client) => {
     const copiedData: Partial<ClientFormData> = {
-      lastName: client.lastName,
-      firstName: client.firstName,
+      lastName: client.lastName.toUpperCase(),
+      firstName: client.firstName.toUpperCase(),
       phoneNumber: client.phoneNumber,
       dob: client.dob,
-      placeOfIssue: client.placeOfIssue,
+      placeOfIssue: client.placeOfIssue.toUpperCase(),
       category: client.category,
       appointmentDate: client.appointmentDate,
       photoUrl: client.photoUrl,
