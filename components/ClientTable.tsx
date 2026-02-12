@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, CreditCard, Calendar as CalendarIcon, X, Tag, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getDaysDiff, getWeekdayIndex } from '../utils/helpers';
@@ -24,13 +24,21 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
   const itemsPerPage = 20;
 
+  // Reset to first page when filters or search changes to avoid "empty page" bug
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, dateFilter, categorySort]);
+
   const processedClients = useMemo(() => {
     let filtered = clients.filter(c => {
-      const matchesSearch = `${c.firstName} ${c.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-        c.passportNumber.includes(search) ||
+      const fullName = `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase();
+      const searchTerm = search.toLowerCase();
+      
+      const matchesSearch = fullName.includes(searchTerm) ||
+        (c.passportNumber && c.passportNumber.includes(search)) ||
         (c.phoneNumber && c.phoneNumber.includes(search)) ||
-        c.category.toLowerCase().includes(search.toLowerCase()) ||
-        c.id.toLowerCase().includes(search.toLowerCase());
+        (c.category && c.category.toLowerCase().includes(searchTerm)) ||
+        (c.id && c.id.toLowerCase().includes(searchTerm));
 
       const matchesDate = !dateFilter || (c.createdAt && c.createdAt.startsWith(dateFilter));
 
@@ -39,14 +47,14 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
 
     if (categorySort) {
       filtered.sort((a, b) => {
-        if (categorySort === 'asc') return a.category.localeCompare(b.category);
-        return b.category.localeCompare(a.category);
+        if (categorySort === 'asc') return (a.category || '').localeCompare(b.category || '');
+        return (b.category || '').localeCompare(a.category || '');
       });
     } else {
       // Primary sort by updatedAt, then by createdAt
       filtered.sort((a, b) => {
-        const timeA = new Date(a.updatedAt || a.createdAt).getTime();
-        const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+        const timeA = new Date(a.updatedAt || a.createdAt).getTime() || 0;
+        const timeB = new Date(b.updatedAt || b.createdAt).getTime() || 0;
         return timeB - timeA;
       });
     }
@@ -64,6 +72,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     if (!dateStr) return '---';
     try {
       const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
       return date.toLocaleDateString(lang === 'ar' ? 'ar-EG' : lang === 'fr' ? 'fr-FR' : 'en-GB', {
         day: '2-digit',
         month: '2-digit',
@@ -156,8 +165,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     if (!client.updatedAt || !client.createdAt) return false;
     const created = new Date(client.createdAt).getTime();
     const updated = new Date(client.updatedAt).getTime();
+    if (isNaN(created) || isNaN(updated)) return false;
     // Consider modified if updated_at is more than 3 seconds after created_at
-    // to account for DB timestamp variance on insertion.
     return (updated - created) > 3000;
   };
 
