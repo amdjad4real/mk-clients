@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Clock, CreditCard, Calendar as CalendarIcon, X, Tag, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, CreditCard, Calendar as CalendarIcon, X, Tag, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getDaysDiff, getWeekdayIndex } from '../utils/helpers';
 
@@ -11,12 +11,11 @@ interface ClientTableProps {
   onEdit: (c: Client) => void;
   onDelete: (id: string) => void;
   onCopy: (c: Client) => void;
-  onViewHistory: (c: Client) => void;
 }
 
 type SortOrder = 'asc' | 'desc' | null;
 
-const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy, onViewHistory }) => {
+const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy }) => {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,7 +43,12 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
         return b.category.localeCompare(a.category);
       });
     } else {
-      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // Sort by updated_at (primary) then created_at (secondary)
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+        return dateB - dateA;
+      });
     }
 
     return filtered;
@@ -148,6 +152,14 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     });
   };
 
+  const isModified = (client: Client) => {
+    if (!client.updatedAt || !client.createdAt) return false;
+    // Consider modified if updated_at is more than 5 seconds later than created_at
+    const created = new Date(client.createdAt).getTime();
+    const updated = new Date(client.updatedAt).getTime();
+    return (updated - created) > 5000;
+  };
+
   let lastDisplayedDate = '';
 
   return (
@@ -219,10 +231,12 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {paginatedClients.length > 0 ? (
               paginatedClients.map((client) => {
-                const currentDate = client.createdAt ? client.createdAt.split('T')[0] : '';
+                const effectiveDate = client.updatedAt || client.createdAt;
+                const currentDate = effectiveDate ? effectiveDate.split('T')[0] : '';
                 const showDateHeader = !categorySort && currentDate !== lastDisplayedDate;
                 const isOrn2 = client.category === 'ORN2';
                 const isAlg2 = client.category === 'ALG2';
+                const modified = isModified(client);
                 
                 if (showDateHeader) {
                   lastDisplayedDate = currentDate;
@@ -238,7 +252,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                             <span className="text-sm font-black text-blue-700 dark:text-blue-400 uppercase tracking-tighter">
                               {formatDate(currentDate)}
                               {currentDate === new Date().toISOString().split('T')[0] && (
-                                <span className="ml-2 px-1.5 py-0.5 bg-blue-600 text-white text-[9px] rounded-full shadow-lg shadow-blue-500/30">NEW</span>
+                                <span className="ml-2 px-1.5 py-0.5 bg-blue-600 text-white text-[9px] rounded-full shadow-lg shadow-blue-500/30">LATEST</span>
                               )}
                             </span>
                           </div>
@@ -258,8 +272,15 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-slate-900 dark:text-white uppercase leading-tight">
-                          {client.firstName} {client.lastName}
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-bold text-slate-900 dark:text-white uppercase leading-tight">
+                            {client.firstName} {client.lastName}
+                          </div>
+                          {modified && (
+                            <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[8px] font-black rounded border border-red-200 uppercase tracking-tighter shadow-sm animate-pulse">
+                              {t.modified}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[10px] text-slate-500 mt-0.5 font-bold uppercase">
                           DOB: {client.dob}
@@ -290,9 +311,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                         <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse opacity-40 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => onEdit(client)} title={t.edit} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                             <Edit className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => onViewHistory(client)} title={t.history} className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
-                            <Clock className="w-4 h-4" />
                           </button>
                           <button onClick={() => handleCopyAction(client)} title={t.copy} className={`p-1.5 rounded-lg transition-colors ${copiedId === client.id ? 'text-green-500' : 'text-green-600 hover:bg-green-50'}`}>
                             {copiedId === client.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}

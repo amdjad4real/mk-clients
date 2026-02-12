@@ -19,6 +19,7 @@ export interface Client {
   appointmentDate: string; // ISO date string (YYYY-MM-DD)
   photoUrl?: string;
   createdAt: string; // ISO timestamp from DB
+  updatedAt?: string; // ISO timestamp for modifications
   payment: {
     cardMask: string;
     expiryDate: string;
@@ -28,15 +29,6 @@ export interface Client {
   };
 }
 
-export interface ActivityLog {
-  id: string;
-  client_id: string;
-  action: 'Added' | 'Modified' | 'Deleted';
-  changes: Record<string, { from: any, to: any }> | null;
-  created_at: string;
-  user_email?: string;
-}
-
 export interface PaymentData {
   cardNumber: string;
   cardHolderName: string;
@@ -44,6 +36,6 @@ export interface PaymentData {
   cvv: string;
 }
 
-export interface ClientFormData extends Omit<Client, 'id' | 'payment' | 'createdAt'> {
+export interface ClientFormData extends Omit<Client, 'id' | 'payment' | 'createdAt' | 'updatedAt'> {
   payment: PaymentData;
 }

@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Language, Theme, Client, ClientFormData, ActivityLog } from './types.ts';
+import { Language, Theme, Client, ClientFormData } from './types.ts';
 import { TRANSLATIONS } from './constants.tsx';
 import Navbar from './components/Navbar.tsx';
 import ClientForm from './components/ClientForm.tsx';
 import ClientTable from './components/ClientTable.tsx';
-import HistoryModal from './components/HistoryModal.tsx';
 import Auth from './components/Auth.tsx';
 import { maskCard } from './utils/helpers.ts';
 import { supabase } from './lib/supabase.ts';
@@ -26,8 +25,6 @@ const App: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isFetchingClients, setIsFetchingClients] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [copyingClient, setCopyingClient] = useState<Partial<ClientFormData> | null>(null);
 
   useEffect(() => {
@@ -74,6 +71,7 @@ const App: React.FC = () => {
     category: data.category,
     appointment_date: data.appointmentDate,
     photo_url: data.photoUrl,
+    updated_at: new Date().toISOString(),
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
       expiryDate: data.payment.expiryDate || 'N/A',
@@ -100,6 +98,7 @@ const App: React.FC = () => {
     appointmentDate: dbItem.appointment_date || dbItem.appointmentDate,
     photoUrl: dbItem.photo_url || dbItem.photoUrl,
     createdAt: dbItem.created_at,
+    updatedAt: dbItem.updated_at,
     payment: {
       ...dbItem.payment,
       cardHolderName: (dbItem.payment?.cardHolderName || '').toUpperCase()
@@ -113,7 +112,7 @@ const App: React.FC = () => {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
       
       if (error) throw error;
       setClients((data || []).map(mapFromDB));
@@ -124,80 +123,11 @@ const App: React.FC = () => {
     }
   };
 
-  const fetchActivityLogs = async (clientId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('client_activity')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setActivityLogs(data || []);
-    } catch (err) {
-      console.error('Error fetching activity logs:', err);
-    }
-  };
-
   useEffect(() => {
     if (session?.user) {
       fetchClients();
     }
   }, [session]);
-
-  const logActivity = async (clientId: string, action: 'Added' | 'Modified' | 'Deleted', changes: any = null) => {
-    if (!session?.user) return;
-    try {
-      const { error } = await supabase.from('client_activity').insert([{
-        client_id: clientId,
-        user_id: session.user.id,
-        user_email: session.user.email,
-        action,
-        changes
-      }]);
-      if (error) throw error;
-    } catch (err) {
-      console.error('Critical Logging Error:', err);
-    }
-  };
-
-  const getChanges = (oldClient: Client, newData: ClientFormData) => {
-    const changes: Record<string, { from: any, to: any }> = {};
-    
-    // Using stable keys for DB storage
-    const fieldMap: Record<string, keyof Client> = {
-      firstName: 'firstName',
-      lastName: 'lastName',
-      passportNumber: 'passportNumber',
-      dob: 'dob',
-      category: 'category',
-      appointmentDate: 'appointmentDate',
-      placeOfIssue: 'placeOfIssue',
-      phoneNumber: 'phoneNumber',
-      previousVisaNumber: 'previousVisaNumber',
-      visaFrom: 'visaFrom',
-      visaTo: 'visaTo',
-      expiryDate: 'expiryDate',
-      issueDate: 'issueDate'
-    };
-
-    Object.entries(fieldMap).forEach(([key, clientKey]) => {
-      const oldVal = String(oldClient[clientKey] || '').trim().toUpperCase();
-      const newVal = String((newData as any)[clientKey] || '').trim().toUpperCase();
-      if (oldVal !== newVal) {
-        changes[key] = { from: oldVal || '---', to: newVal || '---' };
-      }
-    });
-
-    // Check payment mask
-    const oldCardMask = oldClient.payment.cardMask;
-    const newCardMask = maskCard(newData.payment.cardNumber);
-    if (oldCardMask !== newCardMask) {
-      changes['paymentCard'] = { from: oldCardMask, to: newCardMask };
-    }
-
-    return Object.keys(changes).length > 0 ? changes : null;
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -217,7 +147,6 @@ const App: React.FC = () => {
         const newClient = mapFromDB(data[0]);
         setClients(prev => [newClient, ...prev]);
         setCopyingClient(null);
-        await logActivity(newClient.id, 'Added');
       }
     } catch (err: any) {
       console.error('Registration failed:', err);
@@ -229,9 +158,6 @@ const App: React.FC = () => {
   const handleUpdateClient = async (id: string, formData: ClientFormData) => {
     if (!session?.user) return;
     try {
-      const oldClient = clients.find(c => c.id === id);
-      const changes = oldClient ? getChanges(oldClient, formData) : null;
-      
       const payload = mapToDB(formData, session.user.id);
       const { data, error } = await supabase
         .from('clients')
@@ -243,10 +169,11 @@ const App: React.FC = () => {
       
       if (data && data.length > 0) {
         const updatedClient = mapFromDB(data[0]);
-        setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
-        if (changes) {
-          await logActivity(id, 'Modified', changes);
-        }
+        // Update list and re-sort by updated_at
+        setClients(prev => {
+          const filtered = prev.filter(c => c.id !== id);
+          return [updatedClient, ...filtered];
+        });
       }
       setEditingClient(null);
     } catch (err: any) {
@@ -262,7 +189,6 @@ const App: React.FC = () => {
     try {
       const { error } = await supabase.from('clients').delete().eq('id', id);
       if (error) throw error;
-      await logActivity(id, 'Deleted');
       setClients(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Delete failed:', err);
@@ -271,11 +197,6 @@ const App: React.FC = () => {
 
   const handleEditClient = (client: Client) => {
     setEditingClient(client);
-  };
-
-  const handleViewHistory = async (client: Client) => {
-    setHistoryClient(client);
-    await fetchActivityLogs(client.id);
   };
 
   const handleCopyClient = (client: Client) => {
@@ -333,7 +254,6 @@ const App: React.FC = () => {
             onEdit={handleEditClient} 
             onDelete={handleDeleteClient} 
             onCopy={handleCopyClient} 
-            onViewHistory={handleViewHistory}
           />
         </section>
       </main>
@@ -350,16 +270,6 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {historyClient && (
-        <HistoryModal 
-          logs={activityLogs} 
-          clientName={`${historyClient.firstName} ${historyClient.lastName}`} 
-          t={t} 
-          lang={lang} 
-          onClose={() => setHistoryClient(null)} 
-        />
       )}
     </div>
   );
