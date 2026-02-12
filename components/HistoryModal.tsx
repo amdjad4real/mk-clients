@@ -38,6 +38,24 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ logs, clientName, t, lang, 
     return action;
   };
 
+  // Maps internal keys back to translated labels
+  const fieldLabels: Record<string, string> = {
+    firstName: t.firstName,
+    lastName: t.lastName,
+    passportNumber: t.passportNumber,
+    dob: t.dob,
+    category: t.category,
+    appointmentDate: t.appointmentDate,
+    placeOfIssue: t.placeOfIssue,
+    phoneNumber: t.phoneNumber,
+    previousVisaNumber: t.prevVisa,
+    visaFrom: t.visaFrom,
+    visaTo: t.visaTo,
+    expiryDate: t.expiryDate,
+    issueDate: t.issueDate,
+    paymentCard: t.cardNumber
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
@@ -89,12 +107,12 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ logs, clientName, t, lang, 
 
                     {log.changes && Object.keys(log.changes).length > 0 && (
                       <div className="space-y-3 mt-3">
-                        {/* Fix: Explicitly cast change details to fix unknown property errors for from/to */}
                         {Object.entries(log.changes).map(([field, diff]) => {
                           const { from, to } = diff as { from: any; to: any };
+                          const label = fieldLabels[field] || field;
                           return (
                             <div key={field} className="text-xs">
-                              <div className="font-black text-slate-500 dark:text-slate-400 uppercase text-[9px] tracking-widest mb-1">{field}</div>
+                              <div className="font-black text-slate-500 dark:text-slate-400 uppercase text-[9px] tracking-widest mb-1">{label}</div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="px-2 py-1 rounded bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold border border-red-100 dark:border-red-900/30 line-through decoration-red-400/50">
                                   {String(from)}

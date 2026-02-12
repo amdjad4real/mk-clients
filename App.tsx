@@ -68,7 +68,6 @@ const App: React.FC = () => {
     issue_date: data.issueDate,
     expiry_date: data.expiryDate,
     place_of_issue: (data.placeOfIssue || '').trim().toUpperCase(),
-    // Fix: Access properties from ClientFormData using correct camelCase names from the interface
     previous_visa_number: data.previousVisaNumber,
     visa_from: data.visaFrom,
     visa_to: data.visaTo,
@@ -91,7 +90,6 @@ const App: React.FC = () => {
     phoneNumber: dbItem.phone_number || dbItem.phoneNumber,
     dob: dbItem.dob,
     passportNumber: dbItem.passport_number || dbItem.passportNumber,
-    // Fix: Remove redundant and invalid property 'issue_date' (invalid property for Client type)
     issueDate: dbItem.issue_date || dbItem.issueDate,
     expiryDate: dbItem.expiry_date || dbItem.expiryDate,
     placeOfIssue: (dbItem.place_of_issue || dbItem.placeOfIssue || '').trim().toUpperCase(),
@@ -150,43 +148,52 @@ const App: React.FC = () => {
   const logActivity = async (clientId: string, action: 'Added' | 'Modified' | 'Deleted', changes: any = null) => {
     if (!session?.user) return;
     try {
-      await supabase.from('client_activity').insert([{
+      const { error } = await supabase.from('client_activity').insert([{
         client_id: clientId,
         user_id: session.user.id,
         user_email: session.user.email,
         action,
         changes
       }]);
+      if (error) throw error;
     } catch (err) {
-      console.error('Logging failed:', err);
+      console.error('Critical Logging Error:', err);
     }
   };
 
   const getChanges = (oldClient: Client, newData: ClientFormData) => {
     const changes: Record<string, { from: any, to: any }> = {};
-    const t = TRANSLATIONS[lang];
-
-    const fields: Record<string, keyof Client> = {
-      [t.firstName]: 'firstName',
-      [t.lastName]: 'lastName',
-      [t.passportNumber]: 'passportNumber',
-      [t.dob]: 'dob',
-      [t.category]: 'category',
-      [t.appointmentDate]: 'appointmentDate',
-      [t.placeOfIssue]: 'placeOfIssue'
+    
+    // Using stable keys for DB storage
+    const fieldMap: Record<string, keyof Client> = {
+      firstName: 'firstName',
+      lastName: 'lastName',
+      passportNumber: 'passportNumber',
+      dob: 'dob',
+      category: 'category',
+      appointmentDate: 'appointmentDate',
+      placeOfIssue: 'placeOfIssue',
+      phoneNumber: 'phoneNumber',
+      previousVisaNumber: 'previousVisaNumber',
+      visaFrom: 'visaFrom',
+      visaTo: 'visaTo',
+      expiryDate: 'expiryDate',
+      issueDate: 'issueDate'
     };
 
-    Object.entries(fields).forEach(([label, key]) => {
-      const oldVal = String(oldClient[key] || '').trim().toUpperCase();
-      const newVal = String((newData as any)[key] || '').trim().toUpperCase();
+    Object.entries(fieldMap).forEach(([key, clientKey]) => {
+      const oldVal = String(oldClient[clientKey] || '').trim().toUpperCase();
+      const newVal = String((newData as any)[clientKey] || '').trim().toUpperCase();
       if (oldVal !== newVal) {
-        changes[label] = { from: oldVal || 'N/A', to: newVal || 'N/A' };
+        changes[key] = { from: oldVal || '---', to: newVal || '---' };
       }
     });
 
-    // Check payment
-    if (oldClient.payment.cardMask !== maskCard(newData.payment.cardNumber)) {
-        changes[t.cardNumber] = { from: oldClient.payment.cardMask, to: maskCard(newData.payment.cardNumber) };
+    // Check payment mask
+    const oldCardMask = oldClient.payment.cardMask;
+    const newCardMask = maskCard(newData.payment.cardNumber);
+    if (oldCardMask !== newCardMask) {
+      changes['paymentCard'] = { from: oldCardMask, to: newCardMask };
     }
 
     return Object.keys(changes).length > 0 ? changes : null;
