@@ -19,7 +19,7 @@ export interface Client {
   appointmentDate: string; // ISO date string (YYYY-MM-DD)
   photoUrl?: string;
   createdAt: string; // ISO timestamp from DB
-  updatedAt?: string; // ISO timestamp for modifications
+  updatedAt: string; // ISO timestamp for modifications
   payment: {
     cardMask: string;
     expiryDate: string;

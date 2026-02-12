@@ -71,7 +71,7 @@ const App: React.FC = () => {
     category: data.category,
     appointment_date: data.appointmentDate,
     photo_url: data.photoUrl,
-    updated_at: new Date().toISOString(), // Ensure updated_at is refreshed on every map
+    updated_at: new Date().toISOString(),
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
       expiryDate: data.payment.expiryDate || 'N/A',
@@ -98,7 +98,7 @@ const App: React.FC = () => {
     appointmentDate: dbItem.appointment_date || dbItem.appointmentDate,
     photoUrl: dbItem.photo_url || dbItem.photoUrl,
     createdAt: dbItem.created_at,
-    updatedAt: dbItem.updated_at,
+    updatedAt: dbItem.updated_at || dbItem.created_at,
     payment: {
       ...dbItem.payment,
       cardHolderName: (dbItem.payment?.cardHolderName || '').toUpperCase()
@@ -169,10 +169,10 @@ const App: React.FC = () => {
       
       if (data && data.length > 0) {
         const updatedClient = mapFromDB(data[0]);
-        // Update list: move modified item to top and re-sort
+        // Update list: Modified client always moves to the top by updated_at
         setClients(prev => {
-          const filtered = prev.filter(c => c.id !== id);
-          return [updatedClient, ...filtered];
+          const others = prev.filter(c => c.id !== id);
+          return [updatedClient, ...others];
         });
       }
       setEditingClient(null);

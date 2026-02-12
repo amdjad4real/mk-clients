@@ -29,5 +29,5 @@ CREATE TABLE IF NOT EXISTS clients (
 CREATE POLICY "Users can only see their own clients" ON clients
   FOR ALL USING (auth.uid() = user_id);
 
--- Cleanup
+-- Cleanup unused history table
 DROP TABLE IF EXISTS client_activity;
