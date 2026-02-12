@@ -221,6 +221,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                 const currentDate = client.createdAt ? client.createdAt.split('T')[0] : '';
                 const showDateHeader = !categorySort && currentDate !== lastDisplayedDate;
                 const isOrn2 = client.category === 'ORN2';
+                const isAlg2 = client.category === 'ALG2';
                 
                 if (showDateHeader) {
                   lastDisplayedDate = currentDate;
@@ -246,6 +247,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                     <tr className={`transition-colors group ${
                       isOrn2 
                         ? 'bg-amber-50/70 dark:bg-amber-900/20 hover:bg-amber-100/80 dark:hover:bg-amber-900/30 border-l-4 border-amber-500' 
+                        : isAlg2
+                        ? 'bg-emerald-50/70 dark:bg-emerald-900/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/30 border-l-4 border-emerald-500'
                         : 'hover:bg-slate-50/50 dark:hover:bg-slate-700/30'
                     }`}>
                       <td className="px-6 py-4">
@@ -268,6 +271,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                         <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${
                           isOrn2 
                             ? 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100' 
+                            : isAlg2
+                            ? 'bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100'
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                         }`}>
                           {client.category}
