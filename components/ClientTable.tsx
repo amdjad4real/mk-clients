@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Clock, CreditCard } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Clock, CreditCard, Calendar as CalendarIcon, X } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getDaysDiff, getWeekdayIndex } from '../utils/helpers';
 
@@ -14,18 +15,23 @@ interface ClientTableProps {
 
 const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy }) => {
   const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
   const itemsPerPage = 10; 
 
-  const filteredClients = clients.filter(c => 
-    `${c.firstName} ${c.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-    c.passportNumber.includes(search) ||
-    (c.phoneNumber && c.phoneNumber.includes(search)) ||
-    c.category.toLowerCase().includes(search.toLowerCase()) ||
-    c.id.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredClients = clients.filter(c => {
+    const matchesSearch = `${c.firstName} ${c.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
+      c.passportNumber.includes(search) ||
+      (c.phoneNumber && c.phoneNumber.includes(search)) ||
+      c.category.toLowerCase().includes(search.toLowerCase()) ||
+      c.id.toLowerCase().includes(search.toLowerCase());
+
+    const matchesDate = !dateFilter || (c.createdAt && c.createdAt.startsWith(dateFilter));
+
+    return matchesSearch && matchesDate;
+  });
 
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
   const paginatedClients = filteredClients.slice(
@@ -61,7 +67,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   };
 
   const handleCopyPaymentAction = (client: Client) => {
-    // Strip all spaces from card number or mask to ensure format like 6280703004670888
     const rawCard = client.payment.cardNumber || client.payment.cardMask || '';
     const cleanCard = rawCard.replace(/\s+/g, '');
 
@@ -78,6 +83,13 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
       setCopiedPaymentId(client.id);
       setTimeout(() => setCopiedPaymentId(null), 2000);
     });
+  };
+
+  const isNew = (createdAt: string) => {
+    if (!createdAt) return false;
+    const created = new Date(createdAt);
+    const today = new Date();
+    return created.toDateString() === today.toDateString();
   };
 
   const getStatusBadge = (dateStr: string) => {
@@ -116,29 +128,64 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     );
   };
 
+  const handleSetTodayFilter = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setDateFilter(today);
+  };
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-      <div className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder={t.search}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          />
+      <div className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-700 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row gap-4 flex-1">
+          {/* Text Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t.search}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium"
+            />
+          </div>
+
+          {/* Date Filter */}
+          <div className="relative flex-1 md:max-w-[240px]">
+            <CalendarIcon className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full pl-10 pr-10 rtl:pr-10 rtl:pl-10 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium uppercase text-xs"
+            />
+            {dateFilter && (
+              <button 
+                onClick={() => setDateFilter('')}
+                className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+              >
+                <X className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+            )}
+          </div>
+
+          <button 
+            onClick={handleSetTodayFilter}
+            className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${dateFilter === new Date().toISOString().split('T')[0] ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-transparent'}`}
+          >
+            TODAY
+          </button>
         </div>
-        <button onClick={() => setCurrentPage(1)} className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+
+        <button onClick={() => { setSearch(''); setDateFilter(''); setCurrentPage(1); }} className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600">
           <RefreshCcw className="w-4 h-4" />
-          <span className="text-sm font-bold">{t.refresh}</span>
+          <span className="text-xs font-black uppercase tracking-wider">{t.refresh}</span>
         </button>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-left rtl:text-right border-collapse">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+            <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">
               <th className="px-6 py-4">{t.photo}</th>
               <th className="px-6 py-4">{t.firstName} & {t.lastName}</th>
               <th className="px-6 py-4">{t.passportNumber}</th>
@@ -152,17 +199,25 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
           <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
             {paginatedClients.length > 0 ? (
               paginatedClients.map((client) => (
-                <tr key={client.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
+                <tr key={client.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
                   <td className="px-6 py-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600">
-                      {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-slate-400" />}
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600">
+                        {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-slate-400" />}
+                      </div>
+                      {isNew(client.createdAt) && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-10">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full px-1.5 py-0.5 bg-blue-600 text-[8px] font-black text-white leading-none flex items-center justify-center shadow-lg">NEW</span>
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                    <div className="text-sm font-bold text-slate-900 dark:text-white leading-tight uppercase">
                       {client.firstName} {client.lastName}
                     </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{client.dob}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-bold">{client.dob}</div>
                   </td>
                   <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">
                     {client.passportNumber}
@@ -183,18 +238,18 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs text-slate-400 italic">N/A</span>
+                      <span className="text-xs text-slate-400 italic font-medium">N/A</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
                     {getStatusBadge(client.appointmentDate)}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200">{client.payment.cardMask || 'N/A'}</div>
+                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase">{client.payment.cardMask || 'N/A'}</div>
                     <div className="text-[10px] text-slate-500 font-medium">{client.payment.expiryDate}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
+                    <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse opacity-40 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => onEdit(client)} title={t.edit} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                         <Edit className="w-4 h-4" />
                       </button>
@@ -212,21 +267,29 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-500 italic">No clients found.</td></tr>
+              <tr><td colSpan={8} className="px-6 py-20 text-center text-slate-500 italic font-medium">No records found for the selected criteria.</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
       {totalPages > 1 && (
-        <div className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-          <p className="text-sm text-slate-500 font-medium">Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredClients.length)} of {filteredClients.length} entries</p>
+        <div className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredClients.length)} of {filteredClients.length} entries
+          </p>
           <div className="flex space-x-1 rtl:space-x-reverse">
-            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50 transition-colors border border-slate-200 dark:border-slate-600"><ChevronLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" /></button>
             {[...Array(totalPages)].map((_, i) => (
-              <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 rounded-lg text-sm font-bold transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>{i + 1}</button>
+              <button 
+                key={i} 
+                onClick={() => setCurrentPage(i + 1)} 
+                className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 border-blue-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'}`}
+              >
+                {i + 1}
+              </button>
             ))}
-            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50 transition-colors border border-slate-200 dark:border-slate-600"><ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-400" /></button>
           </div>
         </div>
       )}

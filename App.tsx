@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Language, Theme, Client, ClientFormData } from './types.ts';
 import { TRANSLATIONS } from './constants.tsx';
@@ -95,6 +96,7 @@ const App: React.FC = () => {
     category: dbItem.category,
     appointmentDate: dbItem.appointment_date || dbItem.appointmentDate,
     photoUrl: dbItem.photo_url || dbItem.photoUrl,
+    createdAt: dbItem.created_at,
     payment: {
       ...dbItem.payment,
       cardHolderName: (dbItem.payment?.cardHolderName || '').toUpperCase()

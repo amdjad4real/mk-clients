@@ -18,6 +18,7 @@ export interface Client {
   category: string;
   appointmentDate: string; // ISO date string (YYYY-MM-DD)
   photoUrl?: string;
+  createdAt: string; // ISO timestamp from DB
   payment: {
     cardMask: string;
     expiryDate: string;
@@ -34,6 +35,6 @@ export interface PaymentData {
   cvv: string;
 }
 
-export interface ClientFormData extends Omit<Client, 'id' | 'payment'> {
+export interface ClientFormData extends Omit<Client, 'id' | 'payment' | 'createdAt'> {
   payment: PaymentData;
 }
