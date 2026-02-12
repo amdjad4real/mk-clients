@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Language, Theme, Client, ClientFormData } from './types.ts';
+import { Language, Theme, Client, ClientFormData, ActivityLog } from './types.ts';
 import { TRANSLATIONS } from './constants.tsx';
 import Navbar from './components/Navbar.tsx';
 import ClientForm from './components/ClientForm.tsx';
 import ClientTable from './components/ClientTable.tsx';
+import HistoryModal from './components/HistoryModal.tsx';
 import Auth from './components/Auth.tsx';
 import { maskCard } from './utils/helpers.ts';
 import { supabase } from './lib/supabase.ts';
@@ -25,6 +26,8 @@ const App: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isFetchingClients, setIsFetchingClients] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [historyClient, setHistoryClient] = useState<Client | null>(null);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [copyingClient, setCopyingClient] = useState<Partial<ClientFormData> | null>(null);
 
   useEffect(() => {
@@ -65,6 +68,7 @@ const App: React.FC = () => {
     issue_date: data.issueDate,
     expiry_date: data.expiryDate,
     place_of_issue: (data.placeOfIssue || '').trim().toUpperCase(),
+    // Fix: Access properties from ClientFormData using correct camelCase names from the interface
     previous_visa_number: data.previousVisaNumber,
     visa_from: data.visaFrom,
     visa_to: data.visaTo,
@@ -87,6 +91,7 @@ const App: React.FC = () => {
     phoneNumber: dbItem.phone_number || dbItem.phoneNumber,
     dob: dbItem.dob,
     passportNumber: dbItem.passport_number || dbItem.passportNumber,
+    // Fix: Remove redundant and invalid property 'issue_date' (invalid property for Client type)
     issueDate: dbItem.issue_date || dbItem.issueDate,
     expiryDate: dbItem.expiry_date || dbItem.expiryDate,
     placeOfIssue: (dbItem.place_of_issue || dbItem.placeOfIssue || '').trim().toUpperCase(),
@@ -121,11 +126,71 @@ const App: React.FC = () => {
     }
   };
 
+  const fetchActivityLogs = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_activity')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setActivityLogs(data || []);
+    } catch (err) {
+      console.error('Error fetching activity logs:', err);
+    }
+  };
+
   useEffect(() => {
     if (session?.user) {
       fetchClients();
     }
   }, [session]);
+
+  const logActivity = async (clientId: string, action: 'Added' | 'Modified' | 'Deleted', changes: any = null) => {
+    if (!session?.user) return;
+    try {
+      await supabase.from('client_activity').insert([{
+        client_id: clientId,
+        user_id: session.user.id,
+        user_email: session.user.email,
+        action,
+        changes
+      }]);
+    } catch (err) {
+      console.error('Logging failed:', err);
+    }
+  };
+
+  const getChanges = (oldClient: Client, newData: ClientFormData) => {
+    const changes: Record<string, { from: any, to: any }> = {};
+    const t = TRANSLATIONS[lang];
+
+    const fields: Record<string, keyof Client> = {
+      [t.firstName]: 'firstName',
+      [t.lastName]: 'lastName',
+      [t.passportNumber]: 'passportNumber',
+      [t.dob]: 'dob',
+      [t.category]: 'category',
+      [t.appointmentDate]: 'appointmentDate',
+      [t.placeOfIssue]: 'placeOfIssue'
+    };
+
+    Object.entries(fields).forEach(([label, key]) => {
+      const oldVal = String(oldClient[key] || '').trim().toUpperCase();
+      const newVal = String((newData as any)[key] || '').trim().toUpperCase();
+      if (oldVal !== newVal) {
+        changes[label] = { from: oldVal || 'N/A', to: newVal || 'N/A' };
+      }
+    });
+
+    // Check payment
+    if (oldClient.payment.cardMask !== maskCard(newData.payment.cardNumber)) {
+        changes[t.cardNumber] = { from: oldClient.payment.cardMask, to: maskCard(newData.payment.cardNumber) };
+    }
+
+    return Object.keys(changes).length > 0 ? changes : null;
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -142,8 +207,10 @@ const App: React.FC = () => {
 
       if (error) throw error;
       if (data && data.length > 0) {
-        setClients(prev => [mapFromDB(data[0]), ...prev]);
+        const newClient = mapFromDB(data[0]);
+        setClients(prev => [newClient, ...prev]);
         setCopyingClient(null);
+        await logActivity(newClient.id, 'Added');
       }
     } catch (err: any) {
       console.error('Registration failed:', err);
@@ -155,6 +222,9 @@ const App: React.FC = () => {
   const handleUpdateClient = async (id: string, formData: ClientFormData) => {
     if (!session?.user) return;
     try {
+      const oldClient = clients.find(c => c.id === id);
+      const changes = oldClient ? getChanges(oldClient, formData) : null;
+      
       const payload = mapToDB(formData, session.user.id);
       const { data, error } = await supabase
         .from('clients')
@@ -167,6 +237,9 @@ const App: React.FC = () => {
       if (data && data.length > 0) {
         const updatedClient = mapFromDB(data[0]);
         setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
+        if (changes) {
+          await logActivity(id, 'Modified', changes);
+        }
       }
       setEditingClient(null);
     } catch (err: any) {
@@ -182,6 +255,7 @@ const App: React.FC = () => {
     try {
       const { error } = await supabase.from('clients').delete().eq('id', id);
       if (error) throw error;
+      await logActivity(id, 'Deleted');
       setClients(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Delete failed:', err);
@@ -190,6 +264,11 @@ const App: React.FC = () => {
 
   const handleEditClient = (client: Client) => {
     setEditingClient(client);
+  };
+
+  const handleViewHistory = async (client: Client) => {
+    setHistoryClient(client);
+    await fetchActivityLogs(client.id);
   };
 
   const handleCopyClient = (client: Client) => {
@@ -240,9 +319,18 @@ const App: React.FC = () => {
             <h2 className="text-2xl font-bold">{t.registeredClients}</h2>
             {isFetchingClients && <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>}
           </div>
-          <ClientTable clients={clients} t={t} lang={lang} onEdit={handleEditClient} onDelete={handleDeleteClient} onCopy={handleCopyClient} />
+          <ClientTable 
+            clients={clients} 
+            t={t} 
+            lang={lang} 
+            onEdit={handleEditClient} 
+            onDelete={handleDeleteClient} 
+            onCopy={handleCopyClient} 
+            onViewHistory={handleViewHistory}
+          />
         </section>
       </main>
+
       {editingClient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -255,6 +343,16 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {historyClient && (
+        <HistoryModal 
+          logs={activityLogs} 
+          clientName={`${historyClient.firstName} ${historyClient.lastName}`} 
+          t={t} 
+          lang={lang} 
+          onClose={() => setHistoryClient(null)} 
+        />
       )}
     </div>
   );

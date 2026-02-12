@@ -11,11 +11,12 @@ interface ClientTableProps {
   onEdit: (c: Client) => void;
   onDelete: (id: string) => void;
   onCopy: (c: Client) => void;
+  onViewHistory: (c: Client) => void;
 }
 
 type SortOrder = 'asc' | 'desc' | null;
 
-const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy }) => {
+const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy, onViewHistory }) => {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -287,16 +288,19 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse opacity-40 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => onEdit(client)} title={t.edit} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                          <button onClick={() => onEdit(client)} title={t.edit} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleCopyAction(client)} title={t.copy} className={`p-1.5 rounded-lg ${copiedId === client.id ? 'text-green-500' : 'text-green-600 hover:bg-green-50'}`}>
+                          <button onClick={() => onViewHistory(client)} title={t.history} className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                            <Clock className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleCopyAction(client)} title={t.copy} className={`p-1.5 rounded-lg transition-colors ${copiedId === client.id ? 'text-green-500' : 'text-green-600 hover:bg-green-50'}`}>
                             {copiedId === client.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                           </button>
-                          <button onClick={() => handleCopyPaymentAction(client)} title={t.copyPayment} className={`p-1.5 rounded-lg ${copiedPaymentId === client.id ? 'text-amber-500' : 'text-amber-600 hover:bg-amber-50'}`}>
+                          <button onClick={() => handleCopyPaymentAction(client)} title={t.copyPayment} className={`p-1.5 rounded-lg transition-colors ${copiedPaymentId === client.id ? 'text-amber-500' : 'text-amber-600 hover:bg-amber-50'}`}>
                             {copiedPaymentId === client.id ? <Check className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
                           </button>
-                          <button onClick={() => onDelete(client.id)} title={t.delete} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50">
+                          <button onClick={() => onDelete(client.id)} title={t.delete} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>

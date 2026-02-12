@@ -28,6 +28,15 @@ export interface Client {
   };
 }
 
+export interface ActivityLog {
+  id: string;
+  client_id: string;
+  action: 'Added' | 'Modified' | 'Deleted';
+  changes: Record<string, { from: any, to: any }> | null;
+  created_at: string;
+  user_email?: string;
+}
+
 export interface PaymentData {
   cardNumber: string;
   cardHolderName: string;
