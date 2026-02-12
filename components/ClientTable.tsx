@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Clock, CreditCard, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, Clock, CreditCard, Calendar as CalendarIcon, X, Tag } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getDaysDiff, getWeekdayIndex } from '../utils/helpers';
 
@@ -38,6 +38,20 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '---';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString(lang === 'ar' ? 'ar-EG' : lang === 'fr' ? 'fr-FR' : 'en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   const handleCopyAction = (client: Client) => {
     const details = [
@@ -170,8 +184,9 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
 
           <button 
             onClick={handleSetTodayFilter}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${dateFilter === new Date().toISOString().split('T')[0] ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-transparent'}`}
+            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${dateFilter === new Date().toISOString().split('T')[0] ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-transparent'}`}
           >
+            <Tag className="w-3 h-3" />
             TODAY
           </button>
         </div>
@@ -189,8 +204,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
               <th className="px-6 py-4">{t.photo}</th>
               <th className="px-6 py-4">{t.firstName} & {t.lastName}</th>
               <th className="px-6 py-4">{t.passportNumber}</th>
+              <th className="px-6 py-4">{t.registrationDate}</th>
               <th className="px-6 py-4">{t.category}</th>
-              <th className="px-6 py-4">{t.prevVisa}</th>
               <th className="px-6 py-4">{t.dayStatus}</th>
               <th className="px-6 py-4">{t.payment}</th>
               <th className="px-6 py-4 text-center">{t.actions}</th>
@@ -217,29 +232,27 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                     <div className="text-sm font-bold text-slate-900 dark:text-white leading-tight uppercase">
                       {client.firstName} {client.lastName}
                     </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-bold">{client.dob}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-bold uppercase tracking-tighter">
+                      DOB: {client.dob}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">
                     {client.passportNumber}
                   </td>
                   <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-slate-700 dark:text-slate-200 tabular-nums">
+                        {formatDate(client.createdAt)}
+                      </span>
+                      {isNew(client.createdAt) && (
+                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Added Today</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
                     <span className="px-2 py-1 rounded-md text-[10px] font-black bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 uppercase tracking-tight">
                       {client.category}
                     </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {client.previousVisaNumber ? (
-                      <div className="space-y-0.5">
-                        <div className="text-sm font-bold text-slate-700 dark:text-slate-200">{client.previousVisaNumber}</div>
-                        {(client.visaFrom || client.visaTo) && (
-                          <div className="text-[10px] text-slate-500 font-medium">
-                            {client.visaFrom || '...'} / {client.visaTo || '...'}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400 italic font-medium">N/A</span>
-                    )}
                   </td>
                   <td className="px-6 py-4">
                     {getStatusBadge(client.appointmentDate)}
