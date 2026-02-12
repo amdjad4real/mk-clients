@@ -22,7 +22,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   const [categorySort, setCategorySort] = useState<SortOrder>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
-  const itemsPerPage = 20; // Increased items per page for better grouped view
+  const itemsPerPage = 20;
 
   const processedClients = useMemo(() => {
     let filtered = clients.filter(c => {
@@ -37,14 +37,12 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
       return matchesSearch && matchesDate;
     });
 
-    // Handle Sorting
     if (categorySort) {
       filtered.sort((a, b) => {
         if (categorySort === 'asc') return a.category.localeCompare(b.category);
         return b.category.localeCompare(a.category);
       });
     } else {
-      // Default: Sort by created_at descending
       filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
@@ -115,13 +113,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
       setCopiedPaymentId(client.id);
       setTimeout(() => setCopiedPaymentId(null), 2000);
     });
-  };
-
-  const isNew = (createdAt: string) => {
-    if (!createdAt) return false;
-    const created = new Date(createdAt);
-    const today = new Date();
-    return created.toDateString() === today.toDateString();
   };
 
   const getStatusBadge = (dateStr: string) => {
@@ -229,6 +220,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
               paginatedClients.map((client) => {
                 const currentDate = client.createdAt ? client.createdAt.split('T')[0] : '';
                 const showDateHeader = !categorySort && currentDate !== lastDisplayedDate;
+                const isOrn2 = client.category === 'ORN2';
+                
                 if (showDateHeader) {
                   lastDisplayedDate = currentDate;
                 }
@@ -250,7 +243,11 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                         </td>
                       </tr>
                     )}
-                    <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
+                    <tr className={`transition-colors group ${
+                      isOrn2 
+                        ? 'bg-amber-50/70 dark:bg-amber-900/20 hover:bg-amber-100/80 dark:hover:bg-amber-900/30 border-l-4 border-amber-500' 
+                        : 'hover:bg-slate-50/50 dark:hover:bg-slate-700/30'
+                    }`}>
                       <td className="px-6 py-4">
                         <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600">
                           {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-slate-400" />}
@@ -268,7 +265,11 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                         {client.passportNumber}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="px-2 py-1 rounded-md text-[10px] font-black bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 uppercase">
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${
+                          isOrn2 
+                            ? 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100' 
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                        }`}>
                           {client.category}
                         </span>
                       </td>
