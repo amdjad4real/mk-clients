@@ -43,7 +43,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
         return b.category.localeCompare(a.category);
       });
     } else {
-      // Sort by updated_at (primary) then created_at (secondary)
+      // Primary sort by updatedAt, secondary by createdAt
       filtered.sort((a, b) => {
         const dateA = new Date(a.updatedAt || a.createdAt).getTime();
         const dateB = new Date(b.updatedAt || b.createdAt).getTime();
@@ -154,10 +154,10 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
 
   const isModified = (client: Client) => {
     if (!client.updatedAt || !client.createdAt) return false;
-    // Consider modified if updated_at is more than 5 seconds later than created_at
     const created = new Date(client.createdAt).getTime();
     const updated = new Date(client.updatedAt).getTime();
-    return (updated - created) > 5000;
+    // Use 2s threshold for modification check
+    return (updated - created) > 2000;
   };
 
   let lastDisplayedDate = '';
@@ -277,7 +277,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                             {client.firstName} {client.lastName}
                           </div>
                           {modified && (
-                            <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[8px] font-black rounded border border-red-200 uppercase tracking-tighter shadow-sm animate-pulse">
+                            <span className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black rounded shadow-lg shadow-red-500/30 uppercase tracking-tighter animate-pulse">
                               {t.modified}
                             </span>
                           )}

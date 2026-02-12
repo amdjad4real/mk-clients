@@ -71,7 +71,7 @@ const App: React.FC = () => {
     category: data.category,
     appointment_date: data.appointmentDate,
     photo_url: data.photoUrl,
-    updated_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(), // Ensure updated_at is refreshed on every map
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
       expiryDate: data.payment.expiryDate || 'N/A',
@@ -169,7 +169,7 @@ const App: React.FC = () => {
       
       if (data && data.length > 0) {
         const updatedClient = mapFromDB(data[0]);
-        // Update list and re-sort by updated_at
+        // Update list: move modified item to top and re-sort
         setClients(prev => {
           const filtered = prev.filter(c => c.id !== id);
           return [updatedClient, ...filtered];
