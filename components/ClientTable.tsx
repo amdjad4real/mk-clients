@@ -11,11 +11,12 @@ interface ClientTableProps {
   onEdit: (c: Client) => void;
   onDelete: (id: string) => void;
   onCopy: (c: Client) => void;
+  isFetching?: boolean;
 }
 
 type SortOrder = 'asc' | 'desc' | null;
 
-const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy }) => {
+const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy, isFetching }) => {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,16 +25,18 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
   const itemsPerPage = 20;
 
-  // CRITICAL: Reset to first page when data or filters change to avoid showing an empty page
+  // Reset to page 1 when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, dateFilter, categorySort, clients.length]);
+  }, [search, dateFilter, categorySort]);
 
   const processedClients = useMemo(() => {
+    if (!clients || !Array.isArray(clients)) return [];
+
     const searchTerm = search.toLowerCase().trim();
     
     let filtered = clients.filter(c => {
-      // 1. Search Filter (Safe string conversion)
+      // 1. Search Filter (Strict safe check)
       const firstName = (c.firstName || '').toLowerCase();
       const lastName = (c.lastName || '').toLowerCase();
       const passport = (c.passportNumber || '').toLowerCase();
@@ -49,8 +52,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
 
       // 2. Date Filter (Check both created and updated dates)
       const matchesDate = !dateFilter || 
-        (c.createdAt && c.createdAt.includes(dateFilter)) ||
-        (c.updatedAt && c.updatedAt.includes(dateFilter));
+        (c.createdAt && typeof c.createdAt === 'string' && c.createdAt.includes(dateFilter)) ||
+        (c.updatedAt && typeof c.updatedAt === 'string' && c.updatedAt.includes(dateFilter));
 
       return matchesSearch && matchesDate;
     });
@@ -100,8 +103,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     const created = new Date(client.createdAt).getTime();
     const updated = new Date(client.updatedAt).getTime();
     if (isNaN(created) || isNaN(updated)) return false;
-    // Tight 1-second threshold for modification check
-    return (updated - created) > 1000;
+    // Buffer for database insertion latency (consider modified if updated > 2 seconds after created)
+    return (updated - created) > 2000;
   };
 
   const handleCopyAction = (client: Client) => {
@@ -166,7 +169,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
         <div className={`px-2 py-0.5 rounded text-[10px] font-black uppercase text-center ${colorClasses}`}>
           {dayName}
         </div>
-        <div className="text-[10px] text-slate-500 font-bold tabular-nums">
+        <div className="text-[10px] text-slate-500 font-bold tabular-nums text-center">
           {dateStr}
         </div>
       </div>
@@ -214,13 +217,13 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
           </button>
         </div>
 
-        <button onClick={() => { setSearch(''); setDateFilter(''); setCategorySort(null); setCurrentPage(1); }} className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+        <button onClick={() => { setSearch(''); setDateFilter(''); setCategorySort(null); setCurrentPage(1); }} className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600">
           <RefreshCcw className="w-4 h-4" />
           <span className="text-xs font-black uppercase">{t.refresh}</span>
         </button>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto min-h-[300px]">
         <table className="w-full text-left rtl:text-right border-collapse">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest border-b dark:border-slate-700">
@@ -242,10 +245,10 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {paginatedClients.length > 0 ? (
+            {!isFetching && paginatedClients.length > 0 ? (
               paginatedClients.map((client) => {
                 const effectiveDate = client.updatedAt || client.createdAt;
-                const currentDate = effectiveDate ? effectiveDate.split('T')[0] : '';
+                const currentDate = effectiveDate ? String(effectiveDate).split('T')[0] : '';
                 const showDateHeader = !categorySort && currentDate !== lastDisplayedDate;
                 const isOrn2 = client.category === 'ORN2';
                 const isAlg2 = client.category === 'ALG2';
@@ -317,8 +320,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                         {getStatusBadge(client.appointmentDate)}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase">{client.payment.cardMask || 'N/A'}</div>
-                        <div className="text-[10px] text-slate-500 font-medium">{client.payment.expiryDate}</div>
+                        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase leading-none mb-1">{client.payment.cardMask || 'N/A'}</div>
+                        <div className="text-[10px] text-slate-500 font-medium uppercase leading-none">{client.payment.expiryDate}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse opacity-40 group-hover:opacity-100 transition-opacity">
@@ -341,7 +344,29 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                 );
               })
             ) : (
-              <tr><td colSpan={7} className="px-6 py-20 text-center text-slate-500 italic">No records found.</td></tr>
+              <tr>
+                <td colSpan={7} className="px-6 py-32 text-center">
+                  {isFetching ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-sm font-bold text-slate-400 animate-pulse uppercase tracking-widest">Updating Records...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-4 text-slate-400">
+                      <User className="w-12 h-12 opacity-20" />
+                      <p className="italic text-lg">No records found.</p>
+                      {(search || dateFilter) && (
+                        <button 
+                          onClick={() => { setSearch(''); setDateFilter(''); }}
+                          className="text-blue-600 text-sm font-bold hover:underline"
+                        >
+                          Clear all filters
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -353,11 +378,11 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
             {processedClients.length} entries total
           </p>
           <div className="flex space-x-1 rtl:space-x-reverse">
-            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50"><ChevronLeft className="w-4 h-4" /></button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600"><ChevronLeft className="w-4 h-4" /></button>
             {[...Array(totalPages)].map((_, i) => (
-              <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600'}`}>{i + 1}</button>
+              <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>{i + 1}</button>
             ))}
-            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600"><ChevronRight className="w-4 h-4" /></button>
           </div>
         </div>
       )}

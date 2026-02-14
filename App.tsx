@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Language, Theme, Client, ClientFormData } from './types.ts';
 import { TRANSLATIONS } from './constants.tsx';
 import Navbar from './components/Navbar.tsx';
@@ -57,27 +57,27 @@ const App: React.FC = () => {
 
   const mapToDB = (data: ClientFormData, userId: string) => ({
     user_id: userId,
-    last_name: (data.lastName || '').trim().toUpperCase(),
-    first_name: (data.firstName || '').trim().toUpperCase(),
-    phone_number: data.phoneNumber || '',
+    last_name: String(data.lastName || '').trim().toUpperCase(),
+    first_name: String(data.firstName || '').trim().toUpperCase(),
+    phone_number: String(data.phoneNumber || '').trim(),
     dob: data.dob || '',
-    passport_number: (data.passportNumber || '').trim().toUpperCase(),
+    passport_number: String(data.passportNumber || '').trim().toUpperCase(),
     issue_date: data.issueDate || '',
     expiry_date: data.expiryDate || '',
-    place_of_issue: (data.placeOfIssue || '').trim().toUpperCase(),
-    previous_visa_number: data.previousVisaNumber || '',
+    place_of_issue: String(data.placeOfIssue || '').trim().toUpperCase(),
+    previous_visa_number: String(data.previousVisaNumber || '').trim(),
     visa_from: data.visaFrom || '',
     visa_to: data.visaTo || '',
-    category: (data.category || '').toUpperCase(),
+    category: String(data.category || '').toUpperCase(),
     appointment_date: data.appointmentDate || '',
     photo_url: data.photoUrl || '',
     updated_at: new Date().toISOString(),
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
       expiryDate: data.payment.expiryDate || 'N/A',
-      cardHolderName: (data.payment.cardHolderName || 'N/A').toUpperCase(),
-      cardNumber: data.payment.cardNumber || '', 
-      cvv: data.payment.cvv || ''
+      cardHolderName: String(data.payment.cardHolderName || 'N/A').trim().toUpperCase(),
+      cardNumber: String(data.payment.cardNumber || '').trim(), 
+      cvv: String(data.payment.cvv || '').trim()
     }
   });
 
@@ -85,18 +85,18 @@ const App: React.FC = () => {
     const payment = dbItem.payment || {};
     return {
       id: dbItem.id,
-      lastName: (dbItem.last_name || dbItem.lastName || '').trim().toUpperCase(),
-      firstName: (dbItem.first_name || dbItem.firstName || '').trim().toUpperCase(),
-      phoneNumber: dbItem.phone_number || dbItem.phoneNumber || '',
+      lastName: String(dbItem.last_name || dbItem.lastName || '').trim().toUpperCase(),
+      firstName: String(dbItem.first_name || dbItem.firstName || '').trim().toUpperCase(),
+      phoneNumber: String(dbItem.phone_number || dbItem.phoneNumber || '').trim(),
       dob: dbItem.dob || '',
-      passportNumber: (dbItem.passport_number || dbItem.passportNumber || '').trim().toUpperCase(),
+      passportNumber: String(dbItem.passport_number || dbItem.passportNumber || '').trim().toUpperCase(),
       issueDate: dbItem.issue_date || dbItem.issueDate || '',
       expiryDate: dbItem.expiry_date || dbItem.expiryDate || '',
-      placeOfIssue: (dbItem.place_of_issue || dbItem.placeOfIssue || '').trim().toUpperCase(),
-      previousVisaNumber: dbItem.previous_visa_number || dbItem.previousVisaNumber || '',
+      placeOfIssue: String(dbItem.place_of_issue || dbItem.placeOfIssue || '').trim().toUpperCase(),
+      previousVisaNumber: String(dbItem.previous_visa_number || dbItem.previousVisaNumber || '').trim(),
       visaFrom: dbItem.visa_from || dbItem.visaFrom || '',
       visaTo: dbItem.visa_to || dbItem.visaTo || '',
-      category: (dbItem.category || '').toUpperCase(),
+      category: String(dbItem.category || '').toUpperCase(),
       appointmentDate: dbItem.appointment_date || dbItem.appointmentDate || '',
       photoUrl: dbItem.photo_url || dbItem.photoUrl || '',
       createdAt: dbItem.created_at,
@@ -104,14 +104,14 @@ const App: React.FC = () => {
       payment: {
         cardMask: payment.cardMask || 'N/A',
         expiryDate: payment.expiryDate || 'N/A',
-        cardHolderName: (payment.cardHolderName || 'N/A').toUpperCase(),
+        cardHolderName: String(payment.cardHolderName || 'N/A').trim().toUpperCase(),
         cardNumber: payment.cardNumber || '', 
         cvv: payment.cvv || ''
       }
     };
   };
 
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     if (!session?.user) return;
     setIsFetchingClients(true);
     try {
@@ -127,13 +127,13 @@ const App: React.FC = () => {
     } finally {
       setIsFetchingClients(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     if (session?.user) {
       fetchClients();
     }
-  }, [session]);
+  }, [session, fetchClients]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -175,7 +175,6 @@ const App: React.FC = () => {
       
       if (data && data.length > 0) {
         const updatedClient = mapFromDB(data[0]);
-        // Immediately move modified client to top
         setClients(prev => {
           const filtered = prev.filter(c => c.id !== id);
           return [updatedClient, ...filtered];
@@ -260,6 +259,7 @@ const App: React.FC = () => {
             onEdit={handleEditClient} 
             onDelete={handleDeleteClient} 
             onCopy={handleCopyClient} 
+            isFetching={isFetchingClients}
           />
         </section>
       </main>
