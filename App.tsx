@@ -8,7 +8,7 @@ import ClientTable from './components/ClientTable';
 import Auth from './components/Auth';
 import { maskCard } from './utils/helpers';
 import { supabase } from './lib/supabase';
-import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw } from 'lucide-react';
+import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X } from 'lucide-react';
 
 interface Agent {
   id: string;
@@ -36,6 +36,7 @@ const App: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [isBulkMode, setIsBulkMode] = useState(false);
 
   const isAdmin = useMemo(() => session?.user?.email === 'admin@mkservice.com', [session]);
@@ -74,7 +75,6 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  // Fix: Corrected mapping from database response to Client interface by removing snake_case properties that don't exist on the Client type.
   const mapFromDB = (dbItem: any): Client => ({
     id: dbItem.id,
     lastName: dbItem.last_name,
@@ -117,7 +117,6 @@ const App: React.FC = () => {
         .from('clients')
         .select('*');
 
-      // Crucial Fix: Only admin sees all. Regular users see their own.
       if (!isAdmin) {
         query = query.eq('user_id', session.user.id);
       }
@@ -215,8 +214,6 @@ const App: React.FC = () => {
       if (error) throw error;
       if (data && data.length > 0) {
         setClients(prev => [mapFromDB(data[0]), ...prev]);
-        // For normal users, keep form open if desired, but here we toggle it closed on success
-        // or just let them add another. Let's keep it consistent.
       }
     } catch (err: any) {
       alert(`${t.registrationFailed}: ${err.message}`);
@@ -270,9 +267,37 @@ const App: React.FC = () => {
       const { error } = await supabase.from('clients').delete().eq('id', id);
       if (error) throw error;
       setClients(prev => prev.filter(c => c.id !== id));
+      setSelectedClientIds(prev => prev.filter(cid => cid !== id));
     } catch (err) {
       console.error('Delete failed:', err);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedClientIds.length === 0) return;
+    const confirmMsg = TRANSLATIONS[lang].confirmBulkDelete.replace('{count}', selectedClientIds.length.toString());
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .in('id', selectedClientIds);
+      
+      if (error) throw error;
+
+      setClients(prev => prev.filter(c => !selectedClientIds.includes(c.id)));
+      setSelectedClientIds([]);
+    } catch (err) {
+      console.error('Bulk delete failed:', err);
+      alert('Bulk delete failed. Please try again.');
+    }
+  };
+
+  const toggleClientSelection = (id: string) => {
+    setSelectedClientIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
   };
 
   const handleDeleteAgentData = async (userId: string, email: string) => {
@@ -303,7 +328,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isAdmin ? 'bg-slate-100 dark:bg-[#0a0f1c]' : 'bg-slate-50 dark:bg-slate-900'} text-slate-900 dark:text-slate-100 pb-12 transition-colors duration-200`}>
+    <div className={`min-h-screen ${isAdmin ? 'bg-slate-100 dark:bg-[#0a0f1c]' : 'bg-slate-50 dark:bg-slate-900'} text-slate-900 dark:text-slate-100 pb-24 transition-colors duration-200`}>
       <Navbar lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} t={t} onLogout={handleLogout} userEmail={session.user.email || ''} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
@@ -478,9 +503,42 @@ const App: React.FC = () => {
             onDelete={handleDeleteClient} 
             onCopy={(c) => { setCopyingClient(c); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             isFetching={isFetchingClients}
+            selectedClientIds={selectedClientIds}
+            onToggleClientSelect={toggleClientSelection}
+            onSelectAllVisible={(ids) => setSelectedClientIds(ids)}
           />
         </section>
       </main>
+
+      {/* Floating Action Bar for Bulk Operations */}
+      {selectedClientIds.length > 0 && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-12 duration-500">
+          <div className="bg-slate-900/90 dark:bg-slate-800/95 backdrop-blur-xl px-8 py-5 rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/10 flex items-center gap-8 min-w-[320px] md:min-w-[480px] justify-between">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg">
+                {selectedClientIds.length}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-white font-black uppercase tracking-widest text-xs">{t.nodesSelected}</span>
+                <button 
+                  onClick={() => setSelectedClientIds([])}
+                  className="text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors"
+                >
+                  <X className="w-3 h-3" /> {t.deselectAll}
+                </button>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleBulkDelete}
+              className="px-10 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-red-600/20 transition-all flex items-center gap-3 active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t.deleteSelected}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Overlay */}
       {editingClient && (

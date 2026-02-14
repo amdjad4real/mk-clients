@@ -103,6 +103,8 @@ export const TRANSLATIONS = {
     registrationFailed: 'Registration failed',
     updateFailed: 'Update failed',
     checkEmail: 'Check your email for confirmation link!',
+    deleteSelected: 'Delete Selected',
+    confirmBulkDelete: 'DANGER: Are you sure you want to delete {count} selected records? This action is permanent.',
     days: {
       0: 'Sunday',
       1: 'Monday',
@@ -222,6 +224,8 @@ export const TRANSLATIONS = {
     registrationFailed: 'Échec de l\'enregistrement',
     updateFailed: 'Échec de la mise à jour',
     checkEmail: 'Vérifiez vos e-mails pour le lien de confirmation !',
+    deleteSelected: 'Supprimer la sélection',
+    confirmBulkDelete: 'DANGER : Êtes-vous sûr de vouloir supprimer les {count} dossiers sélectionnés ? Cette action est définitive.',
     days: {
       0: 'Dimanche',
       1: 'Lundi',
@@ -341,6 +345,8 @@ export const TRANSLATIONS = {
     registrationFailed: 'فشل التسجيل',
     updateFailed: 'فشل التحديث',
     checkEmail: 'تحقق من بريدك الإلكتروني للحصول على رابط التأكيد!',
+    deleteSelected: 'حذف المحدد',
+    confirmBulkDelete: 'خطر: هل أنت متأكد من حذف {count} سجلات مختارة؟ لا يمكن التراجع عن ذلك.',
     days: {
       0: 'الأحد',
       1: 'الاثنين',

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square } from 'lucide-react';
 import { Client, Language } from '../types';
 
 interface ClientTableProps {
@@ -11,9 +11,15 @@ interface ClientTableProps {
   onDelete: (id: string) => void;
   onCopy: (c: Client) => void;
   isFetching?: boolean;
+  selectedClientIds?: string[];
+  onToggleClientSelect?: (id: string) => void;
+  onSelectAllVisible?: (ids: string[]) => void;
 }
 
-const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy, isFetching }) => {
+const ClientTable: React.FC<ClientTableProps> = ({ 
+  clients, t, lang, onEdit, onDelete, onCopy, isFetching, 
+  selectedClientIds = [], onToggleClientSelect, onSelectAllVisible 
+}) => {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -37,8 +43,8 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     }
   };
 
-  const groupedClients = useMemo(() => {
-    let filtered = clients.filter(c => {
+  const filteredVisibleClients = useMemo(() => {
+    return clients.filter(c => {
       const searchTerm = search.toLowerCase();
       const matchesSearch = !search || 
         c.firstName.toLowerCase().includes(searchTerm) || 
@@ -50,8 +56,11 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
 
       return matchesSearch && matchesDate;
     });
+  }, [clients, search, dateFilter]);
 
-    filtered.sort((a, b) => {
+  const groupedClients = useMemo(() => {
+    let list = [...filteredVisibleClients];
+    list.sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt).getTime();
       if (a.isEdited && !b.isEdited) return -1;
@@ -60,14 +69,14 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     });
 
     const groups: Record<string, Client[]> = {};
-    filtered.forEach(client => {
+    list.forEach(client => {
       const dateKey = getActivityDate(client);
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(client);
     });
 
     return groups;
-  }, [clients, search, dateFilter]);
+  }, [filteredVisibleClients]);
 
   const handleCopyAction = (client: Client) => {
     const details = [
@@ -118,6 +127,18 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     
     const locale = lang === 'ar' ? 'ar-EG' : (lang === 'fr' ? 'fr-FR' : 'en-US');
     return new Intl.DateTimeFormat(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date);
+  };
+
+  const handleToggleSelectAll = () => {
+    if (!onSelectAllVisible) return;
+    const visibleIds = filteredVisibleClients.map(c => c.id);
+    const allVisibleSelected = visibleIds.every(id => selectedClientIds.includes(id));
+    
+    if (allVisibleSelected) {
+      onSelectAllVisible(selectedClientIds.filter(id => !visibleIds.includes(id)));
+    } else {
+      onSelectAllVisible([...new Set([...selectedClientIds, ...visibleIds])]);
+    }
   };
 
   const sortedGroupKeys = Object.keys(groupedClients).sort((a, b) => b.localeCompare(a));
@@ -176,27 +197,45 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                   <table className="w-full text-left rtl:text-right border-collapse">
                     <thead>
                       <tr className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] border-b dark:border-slate-700/50">
-                        <th className="px-8 py-5">{t.photo}</th>
-                        <th className="px-8 py-5">{t.lastName} & {t.firstName}</th>
-                        <th className="px-8 py-5">{t.passportNumber}</th>
-                        <th className="px-8 py-5">{t.category}</th>
-                        <th className="px-8 py-5">{t.logistics}</th>
-                        <th className="px-8 py-5">{t.payment}</th>
-                        <th className="px-8 py-5 text-center">{t.protocol}</th>
+                        <th className="px-6 py-5 text-center w-12">
+                           <button onClick={handleToggleSelectAll} className="hover:text-indigo-500 transition-colors">
+                             {filteredVisibleClients.length > 0 && filteredVisibleClients.every(c => selectedClientIds.includes(c.id)) 
+                               ? <CheckSquare className="w-5 h-5" /> 
+                               : <Square className="w-5 h-5" />
+                             }
+                           </button>
+                        </th>
+                        <th className="px-6 py-5">{t.photo}</th>
+                        <th className="px-6 py-5">{t.lastName} & {t.firstName}</th>
+                        <th className="px-6 py-5">{t.passportNumber}</th>
+                        <th className="px-6 py-5">{t.category}</th>
+                        <th className="px-6 py-5">{t.logistics}</th>
+                        <th className="px-6 py-5">{t.payment}</th>
+                        <th className="px-6 py-5 text-center">{t.protocol}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                       {groupedClients[dateKey].map((client) => {
                         const isModified = client.isEdited || (new Date(client.updatedAt).getTime() > new Date(client.createdAt).getTime() + 1000);
                         const styles = getCategoryStyles(client.category);
+                        const isSelected = selectedClientIds.includes(client.id);
+                        
                         return (
-                          <tr key={client.id} className={`group transition-all border-l-[8px] ${styles.row} ${isModified ? 'bg-red-50/20 dark:bg-red-950/10' : ''}`}>
-                            <td className="px-8 py-5">
+                          <tr key={client.id} className={`group transition-all border-l-[8px] ${isSelected ? 'bg-indigo-50/40 dark:bg-indigo-900/20 border-indigo-600' : styles.row} ${isModified && !isSelected ? 'bg-red-50/20 dark:bg-red-950/10' : ''}`}>
+                            <td className="px-6 py-5 text-center">
+                               <button 
+                                 onClick={() => onToggleClientSelect?.(client.id)}
+                                 className={`${isSelected ? 'text-indigo-600 animate-in zoom-in-50' : 'text-slate-300 dark:text-slate-600'} hover:text-indigo-500 transition-all`}
+                               >
+                                 {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                               </button>
+                            </td>
+                            <td className="px-6 py-5">
                               <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center border-2 border-slate-100 dark:border-slate-700 shadow-xl group-hover:scale-110 transition-transform">
                                 {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-7 h-7 text-slate-300" />}
                               </div>
                             </td>
-                            <td className="px-8 py-5">
+                            <td className="px-6 py-5">
                               <div className="flex flex-col">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-black uppercase tracking-tighter text-slate-900 dark:text-white">
@@ -211,11 +250,11 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                                 </div>
                               </div>
                             </td>
-                            <td className="px-8 py-5 font-black text-slate-800 dark:text-slate-200 tabular-nums tracking-[0.2em]">{client.passportNumber}</td>
-                            <td className="px-8 py-5">
+                            <td className="px-6 py-5 font-black text-slate-800 dark:text-slate-200 tabular-nums tracking-[0.2em]">{client.passportNumber}</td>
+                            <td className="px-6 py-5">
                               <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border shadow-sm ${styles.badge}`}>{client.category}</span>
                             </td>
-                            <td className="px-8 py-5">
+                            <td className="px-6 py-5">
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 text-[11px] font-black text-slate-900 dark:text-white">
                                   <Plane className="w-4 h-4 text-blue-500" /> {client.previousVisaNumber || '---'}
@@ -225,7 +264,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                                 </div>
                               </div>
                             </td>
-                            <td className="px-8 py-5">
+                            <td className="px-6 py-5">
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 text-[11px] font-black text-slate-900 dark:text-white tabular-nums">
                                   <CardIcon className="w-4 h-4 text-amber-500" /> {client.payment.cardMask || '---'}
@@ -235,7 +274,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                                 </div>
                               </div>
                             </td>
-                            <td className="px-8 py-5">
+                            <td className="px-6 py-5">
                               <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
                                 <button onClick={() => onEdit(client)} className="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm" title={t.edit}>
                                   <Edit className="w-4 h-4" />
