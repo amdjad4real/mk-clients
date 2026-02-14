@@ -27,17 +27,23 @@ const ClientTable: React.FC<ClientTableProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
 
-  // Normalizes dates to YYYY-MM-DD for reliable filtering comparison using local time components
+  /**
+   * CRITICAL: Normalizes the activity date to local YYYY-MM-DD.
+   * This is used for both the grouping keys and the date filter comparison.
+   */
   const getActivityDate = (client: Client) => {
     const d = new Date(client.updatedAt || client.createdAt);
     if (isNaN(d.getTime())) return 'Unknown';
+    // Use local date parts to ensure the filter (which is local) matches correctly
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 
-  // Formats date keys to the user-requested DD/MM/YYYY format for UI headers
+  /**
+   * Formats the YYYY-MM-DD key into the user's requested DD/MM/YYYY header format.
+   */
   const formatDisplayDate = (dateStr: string) => {
     if (dateStr === 'Unknown') return t.uncategorizedHistory;
     const [y, m, d] = dateStr.split('-');
@@ -45,41 +51,46 @@ const ClientTable: React.FC<ClientTableProps> = ({
   };
 
   const getCategoryStyles = (category: string) => {
-    switch (category) {
-      case 'ALG1': return { row: 'bg-emerald-50/30 dark:bg-emerald-950/10 border-emerald-500', badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' };
-      case 'ALG2': return { row: 'bg-sky-50/30 dark:bg-sky-950/10 border-sky-500', badge: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300' };
-      case 'ALG3': return { row: 'bg-indigo-50/30 dark:bg-indigo-950/10 border-indigo-500', badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' };
-      case 'ORN1': return { row: 'bg-orange-50/30 dark:bg-orange-950/10 border-orange-500', badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' };
-      case 'ORN2': return { row: 'bg-lime-50/30 dark:bg-lime-950/10 border-lime-500', badge: 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-300' };
-      case 'ORN3': return { row: 'bg-fuchsia-50/30 dark:bg-fuchsia-950/10 border-fuchsia-500', badge: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-300' };
-      default: return { row: 'bg-slate-50/30 dark:bg-slate-800/20 border-slate-400', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300' };
-    }
+    const maps: Record<string, { row: string, badge: string }> = {
+      'ALG1': { row: 'bg-emerald-50/30 dark:bg-emerald-950/10 border-emerald-500', badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' },
+      'ALG2': { row: 'bg-sky-50/30 dark:bg-sky-950/10 border-sky-500', badge: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300' },
+      'ALG3': { row: 'bg-indigo-50/30 dark:bg-indigo-950/10 border-indigo-500', badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' },
+      'ORN1': { row: 'bg-orange-50/30 dark:bg-orange-950/10 border-orange-500', badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
+      'ORN2': { row: 'bg-lime-50/30 dark:bg-lime-950/10 border-lime-500', badge: 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-300' },
+      'ORN3': { row: 'bg-fuchsia-50/30 dark:bg-fuchsia-950/10 border-fuchsia-500', badge: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-300' },
+    };
+    return maps[category] || { row: 'bg-slate-50/30 dark:bg-slate-800/20 border-slate-400', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300' };
   };
 
+  // STEP 1: Filter clients based on search text AND the date picker
   const filteredVisibleClients = useMemo(() => {
-    const searchTerm = search.toLowerCase();
+    const searchTerm = search.toLowerCase().trim();
     return clients.filter(c => {
-      const activityDate = getActivityDate(c);
-      const matchesSearch = !search || 
+      const activityDate = getActivityDate(c); // YYYY-MM-DD local
+      
+      const matchesSearch = !searchTerm || 
         c.firstName.toLowerCase().includes(searchTerm) || 
         c.lastName.toLowerCase().includes(searchTerm) || 
         c.passportNumber.toLowerCase().includes(searchTerm);
       
+      // Strict date matching: input type="date" value is YYYY-MM-DD
       const matchesDate = !dateFilter || activityDate === dateFilter;
       
       return matchesSearch && matchesDate;
     });
   }, [clients, search, dateFilter]);
 
+  // STEP 2: Group the filtered results into dates
   const groupedClients = useMemo(() => {
-    let list = [...filteredVisibleClients].sort((a, b) => {
-      const timeA = new Date(a.updatedAt || a.createdAt).getTime();
-      const timeB = new Date(b.updatedAt || b.createdAt).getTime();
-      return timeB - timeA;
+    // Sort all records chronologically first (Newest seconds-first)
+    const sortedList = [...filteredVisibleClients].sort((a, b) => {
+      const tA = new Date(a.updatedAt || a.createdAt).getTime();
+      const tB = new Date(b.updatedAt || b.createdAt).getTime();
+      return tB - tA;
     });
 
     const groups: Record<string, Client[]> = {};
-    list.forEach(client => {
+    sortedList.forEach(client => {
       const dateKey = getActivityDate(client);
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(client);
@@ -111,13 +122,13 @@ const ClientTable: React.FC<ClientTableProps> = ({
   };
 
   const handleCopyPaymentDetails = (client: Client) => {
-    const payment = client.payment;
+    const p = client.payment;
     let raw = `Last Name: ${client.lastName.toUpperCase()}\n`;
     raw += `First Name: ${client.firstName.toUpperCase()}\n`;
-    raw += `Card Number: ${payment.cardNumber || ''}\n`;
-    raw += `Card Holder Name: ${(payment.cardHolderName || '').toUpperCase()}\n`;
-    raw += `Expiry Date: ${payment.expiryDate || ''}\n`;
-    raw += `CVV: ${payment.cvv || ''}`;
+    raw += `Card Number: ${p.cardNumber || ''}\n`;
+    raw += `Card Holder Name: ${(p.cardHolderName || '').toUpperCase()}\n`;
+    raw += `Expiry Date: ${p.expiryDate || ''}\n`;
+    raw += `CVV: ${p.cvv || ''}`;
 
     navigator.clipboard.writeText(raw).then(() => {
       setCopiedPaymentId(client.id);
@@ -136,7 +147,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Search and Advanced Date Filter Bar */}
+      {/* Precision Search and Date Filter Bar */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 flex flex-col md:flex-row gap-5">
         <div className="relative flex-1">
           <Search className="absolute left-4 rtl:left-auto rtl:right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -205,6 +216,10 @@ const ClientTable: React.FC<ClientTableProps> = ({
                         const isModified = isAdmin && client.isModified;
                         const styles = getCategoryStyles(client.category);
                         const isSelected = selectedClientIds.includes(client.id);
+                        // Accurate local timestamp including seconds to prevent collision visuals
+                        const timestamp = new Date(client.updatedAt || client.createdAt);
+                        const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
                         return (
                           <tr key={client.id} className={`group transition-all border-l-[8px] ${isSelected ? 'bg-indigo-50/40 dark:bg-indigo-900/20 border-indigo-600' : styles.row} ${isModified && !isSelected ? 'bg-red-50/20 dark:bg-red-950/20 animate-pulse' : ''}`}>
                             <td className="px-6 py-5 text-center">
@@ -232,13 +247,13 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                         )}
                                       </div>
                                       <div className="text-[7px] font-black text-red-600/90 mt-0.5 whitespace-nowrap px-1 uppercase tracking-tighter">
-                                        {new Date(client.updatedAt).toLocaleDateString()} {new Date(client.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                        {timestamp.toLocaleDateString()} {timeStr}
                                       </div>
                                     </div>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 mt-1">
-                                  <Clock className="w-3 h-3" /> {new Date(client.updatedAt || client.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                  <Clock className="w-3 h-3" /> {timeStr}
                                 </div>
                               </div>
                             </td>
