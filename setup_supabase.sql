@@ -20,13 +20,13 @@ CREATE TABLE IF NOT EXISTS clients (
   category TEXT NOT NULL,
   appointment_date DATE,
   photo_url TEXT,
-  is_modified BOOLEAN DEFAULT FALSE,
+  is_modified BOOLEAN DEFAULT FALSE, -- Flag for admin review
   payment JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Ensure column exists if table was already created
+-- Crucial: Ensure the column exists if the table was created previously
 DO $$ 
 BEGIN 
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='is_modified') THEN
@@ -34,35 +34,24 @@ BEGIN
   END IF;
 END $$;
 
--- Clear any existing policies
-DROP POLICY IF EXISTS "Authenticated users can select all clients" ON clients;
-DROP POLICY IF EXISTS "Authenticated users can insert clients" ON clients;
-DROP POLICY IF EXISTS "Authenticated users can update all clients" ON clients;
-DROP POLICY IF EXISTS "Authenticated users can delete all clients" ON clients;
+-- Policies for Data Isolation
+DROP POLICY IF EXISTS "Select isolation" ON clients;
+DROP POLICY IF EXISTS "Insert own" ON clients;
+DROP POLICY IF EXISTS "Update isolation" ON clients;
+DROP POLICY IF EXISTS "Delete isolation" ON clients;
 
--- Policy 1: Select (Admin sees all, Users see own)
-CREATE POLICY "Select isolation" ON clients
-  FOR SELECT USING (
-    (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
-    (auth.uid() = user_id)
-  );
+CREATE POLICY "Select isolation" ON clients FOR SELECT USING (
+  (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR (auth.uid() = user_id)
+);
 
--- Policy 2: Insert (Users set own user_id)
-CREATE POLICY "Insert own" ON clients
-  FOR INSERT WITH CHECK (
-    auth.uid() = user_id
-  );
+CREATE POLICY "Insert own" ON clients FOR INSERT WITH CHECK (
+  auth.uid() = user_id
+);
 
--- Policy 3: Update (Admin can update all, Users update own)
-CREATE POLICY "Update isolation" ON clients
-  FOR UPDATE USING (
-    (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
-    (auth.uid() = user_id)
-  );
+CREATE POLICY "Update isolation" ON clients FOR UPDATE USING (
+  (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR (auth.uid() = user_id)
+);
 
--- Policy 4: Delete (Admin can delete all, Users delete own)
-CREATE POLICY "Delete isolation" ON clients
-  FOR DELETE USING (
-    (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
-    (auth.uid() = user_id)
-  );
+CREATE POLICY "Delete isolation" ON clients FOR DELETE USING (
+  (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR (auth.uid() = user_id)
+);
