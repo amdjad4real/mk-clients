@@ -1,14 +1,16 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle } from 'lucide-react';
 import { Client, Language } from '../types';
 
 interface ClientTableProps {
   clients: Client[];
   t: any;
   lang: Language;
+  isAdmin: boolean;
   onEdit: (c: Client) => void;
   onDelete: (id: string) => void;
+  onConfirmModification?: (id: string) => void;
   onCopy: (c: Client) => void;
   isFetching?: boolean;
   selectedClientIds?: string[];
@@ -17,7 +19,7 @@ interface ClientTableProps {
 }
 
 const ClientTable: React.FC<ClientTableProps> = ({ 
-  clients, t, lang, onEdit, onDelete, onCopy, isFetching, 
+  clients, t, lang, isAdmin, onEdit, onDelete, onConfirmModification, onCopy, isFetching, 
   selectedClientIds = [], onToggleClientSelect, onSelectAllVisible 
 }) => {
   const [search, setSearch] = useState('');
@@ -63,8 +65,8 @@ const ClientTable: React.FC<ClientTableProps> = ({
     list.sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt).getTime();
-      if (a.isEdited && !b.isEdited) return -1;
-      if (!a.isEdited && b.isEdited) return 1;
+      if (a.isModified && !b.isModified && isAdmin) return -1;
+      if (!a.isModified && b.isModified && isAdmin) return 1;
       return timeB - timeA;
     });
 
@@ -76,7 +78,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
     });
 
     return groups;
-  }, [filteredVisibleClients]);
+  }, [filteredVisibleClients, isAdmin]);
 
   const handleCopyAction = (client: Client) => {
     const details = [
@@ -216,7 +218,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                       {groupedClients[dateKey].map((client) => {
-                        const isModified = client.isEdited || (new Date(client.updatedAt).getTime() > new Date(client.createdAt).getTime() + 1000);
+                        const isModified = isAdmin && client.isModified;
                         const styles = getCategoryStyles(client.category);
                         const isSelected = selectedClientIds.includes(client.id);
                         
@@ -237,12 +239,28 @@ const ClientTable: React.FC<ClientTableProps> = ({
                             </td>
                             <td className="px-6 py-5">
                               <div className="flex flex-col">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
                                   <span className="text-sm font-black uppercase tracking-tighter text-slate-900 dark:text-white">
                                     {client.firstName} {client.lastName}
                                   </span>
                                   {isModified && (
-                                    <div className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black rounded uppercase tracking-tighter animate-pulse">{t.updated}</div>
+                                    <div className="flex flex-col items-center">
+                                      <div className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black rounded uppercase tracking-tighter flex items-center gap-1 group/badge relative">
+                                        {t.updated}
+                                        {onConfirmModification && (
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); onConfirmModification(client.id); }}
+                                            className="hover:scale-125 transition-transform"
+                                            title="Confirm review"
+                                          >
+                                            <CheckCircle className="w-2.5 h-2.5" />
+                                          </button>
+                                        )}
+                                      </div>
+                                      <span className="text-[7px] font-black text-red-400 mt-1 uppercase">
+                                        {new Date(client.updatedAt).toLocaleDateString()} {new Date(client.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 mt-1">

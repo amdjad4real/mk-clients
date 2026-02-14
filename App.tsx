@@ -90,6 +90,7 @@ const App: React.FC = () => {
     photoUrl: dbItem.photo_url,
     createdAt: dbItem.created_at,
     updatedAt: dbItem.updated_at || dbItem.created_at,
+    isModified: dbItem.is_modified,
     user_id: dbItem.user_id,
     issueDate: dbItem.issue_date,
     expiryDate: dbItem.expiry_date,
@@ -202,6 +203,7 @@ const App: React.FC = () => {
         category: formData.category,
         appointment_date: formData.appointmentDate,
         photo_url: formData.photoUrl,
+        is_modified: false,
         payment: {
           cardMask: formData.payment.cardNumber ? maskCard(formData.payment.cardNumber) : 'N/A',
           expiryDate: formData.payment.expiryDate,
@@ -240,6 +242,8 @@ const App: React.FC = () => {
         category: formData.category,
         appointment_date: formData.appointmentDate,
         photo_url: formData.photoUrl,
+        is_modified: true, // Flag as modified for admin review
+        updated_at: new Date().toISOString(),
         payment: {
           cardMask: formData.payment.cardNumber ? maskCard(formData.payment.cardNumber) : 'N/A',
           expiryDate: formData.payment.expiryDate,
@@ -251,13 +255,31 @@ const App: React.FC = () => {
       const { data, error } = await supabase.from('clients').update(payload).eq('id', id).select();
       if (error) throw error;
       if (data && data.length > 0) {
-        const updated = { ...mapFromDB(data[0]), isEdited: true };
+        const updated = mapFromDB(data[0]);
         setClients(prev => prev.map(c => c.id === id ? updated : c));
       }
       setEditingClient(null);
     } catch (err: any) {
       alert(`${t.updateFailed}: ${err.message}`);
       throw err;
+    }
+  };
+
+  const handleConfirmModification = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .update({ is_modified: false })
+        .eq('id', id)
+        .select();
+      
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const updated = mapFromDB(data[0]);
+        setClients(prev => prev.map(c => c.id === id ? updated : c));
+      }
+    } catch (err) {
+      console.error('Failed to confirm modification:', err);
     }
   };
 
@@ -499,8 +521,10 @@ const App: React.FC = () => {
             clients={filteredClients} 
             t={t} 
             lang={lang} 
+            isAdmin={isAdmin}
             onEdit={setEditingClient} 
             onDelete={handleDeleteClient} 
+            onConfirmModification={handleConfirmModification}
             onCopy={(c) => { setCopyingClient(c); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             isFetching={isFetchingClients}
             selectedClientIds={selectedClientIds}

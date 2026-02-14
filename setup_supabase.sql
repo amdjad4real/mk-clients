@@ -20,10 +20,19 @@ CREATE TABLE IF NOT EXISTS clients (
   category TEXT NOT NULL,
   appointment_date DATE,
   photo_url TEXT,
+  is_modified BOOLEAN DEFAULT FALSE,
   payment JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Ensure column exists if table was already created
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='is_modified') THEN
+    ALTER TABLE clients ADD COLUMN is_modified BOOLEAN DEFAULT FALSE;
+  END IF;
+END $$;
 
 -- Clear any existing policies
 DROP POLICY IF EXISTS "Authenticated users can select all clients" ON clients;
