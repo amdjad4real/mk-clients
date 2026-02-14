@@ -183,7 +183,6 @@ const ClientTable: React.FC<ClientTableProps> = ({
                       <tr className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] border-b dark:border-slate-700/50">
                         <th className="px-6 py-5 text-center w-12">
                           <button onClick={handleToggleSelectAll} className="hover:text-indigo-500 transition-colors">
-                            {/* Fixed: Access property c.id inside the every callback instead of undefined id */}
                             {filteredVisibleClients.length > 0 && filteredVisibleClients.every(c => selectedClientIds.includes(c.id)) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                           </button>
                         </th>
@@ -226,6 +225,10 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                             <CheckCircle className="w-2.5 h-2.5" />
                                           </button>
                                         )}
+                                      </div>
+                                      {/* Timestamp under the flag */}
+                                      <div className="text-[7px] font-bold text-red-500/80 mt-0.5 whitespace-nowrap px-1">
+                                        {new Date(client.updatedAt).toLocaleDateString()} {new Date(client.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                       </div>
                                     </div>
                                   )}
