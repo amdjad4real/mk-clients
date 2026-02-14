@@ -23,13 +23,28 @@ CREATE TABLE IF NOT EXISTS clients (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Ensure column exists if table was already created
+-- Ensure updated_at exists if table was already created
 DO $$ 
 BEGIN 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='is_modified') THEN
-    ALTER TABLE clients ADD COLUMN is_modified BOOLEAN DEFAULT FALSE;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='updated_at') THEN
+    ALTER TABLE clients ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());
   END IF;
 END $$;
+
+-- Automatic update trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+DROP TRIGGER IF EXISTS update_clients_updated_at ON clients;
+CREATE TRIGGER update_clients_updated_at
+    BEFORE UPDATE ON clients
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
 -- Force PostgREST to reload the schema cache
 NOTIFY pgrst, 'reload schema';
@@ -37,31 +52,28 @@ NOTIFY pgrst, 'reload schema';
 -- Enable RLS
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
--- Clear any existing restrictive policies
-DROP POLICY IF EXISTS "Users can only see their own clients" ON clients;
-DROP POLICY IF EXISTS "Authenticated users can select all clients" ON clients;
-DROP POLICY IF EXISTS "Authenticated users can insert clients" ON clients;
-DROP POLICY IF EXISTS "Authenticated users can update all clients" ON clients;
-DROP POLICY IF EXISTS "Authenticated users can delete all clients" ON clients;
-
 -- Updated Policy Set for Proper Isolation
+DROP POLICY IF EXISTS "Select isolation" ON clients;
 CREATE POLICY "Select isolation" ON clients
   FOR SELECT USING (
     (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
     (auth.uid() = user_id)
   );
 
+DROP POLICY IF EXISTS "Insert own" ON clients;
 CREATE POLICY "Insert own" ON clients
   FOR INSERT WITH CHECK (
     auth.uid() = user_id
   );
 
+DROP POLICY IF EXISTS "Update isolation" ON clients;
 CREATE POLICY "Update isolation" ON clients
   FOR UPDATE USING (
     (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
     (auth.uid() = user_id)
   );
 
+DROP POLICY IF EXISTS "Delete isolation" ON clients;
 CREATE POLICY "Delete isolation" ON clients
   FOR DELETE USING (
     (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
