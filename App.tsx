@@ -59,51 +59,57 @@ const App: React.FC = () => {
     user_id: userId,
     last_name: (data.lastName || '').trim().toUpperCase(),
     first_name: (data.firstName || '').trim().toUpperCase(),
-    phone_number: data.phoneNumber,
-    dob: data.dob,
-    passport_number: data.passportNumber,
-    issue_date: data.issueDate,
-    expiry_date: data.expiryDate,
+    phone_number: data.phoneNumber || '',
+    dob: data.dob || '',
+    passport_number: (data.passportNumber || '').trim().toUpperCase(),
+    issue_date: data.issueDate || '',
+    expiry_date: data.expiryDate || '',
     place_of_issue: (data.placeOfIssue || '').trim().toUpperCase(),
-    previous_visa_number: data.previousVisaNumber,
-    visa_from: data.visaFrom,
-    visa_to: data.visaTo,
-    category: data.category,
-    appointment_date: data.appointmentDate,
-    photo_url: data.photoUrl,
+    previous_visa_number: data.previousVisaNumber || '',
+    visa_from: data.visaFrom || '',
+    visa_to: data.visaTo || '',
+    category: (data.category || '').toUpperCase(),
+    appointment_date: data.appointmentDate || '',
+    photo_url: data.photoUrl || '',
     updated_at: new Date().toISOString(),
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
       expiryDate: data.payment.expiryDate || 'N/A',
       cardHolderName: (data.payment.cardHolderName || 'N/A').toUpperCase(),
-      cardNumber: data.payment.cardNumber, 
-      cvv: data.payment.cvv
+      cardNumber: data.payment.cardNumber || '', 
+      cvv: data.payment.cvv || ''
     }
   });
 
-  const mapFromDB = (dbItem: any): Client => ({
-    id: dbItem.id,
-    lastName: (dbItem.last_name || dbItem.lastName || '').trim().toUpperCase(),
-    firstName: (dbItem.first_name || dbItem.firstName || '').trim().toUpperCase(),
-    phoneNumber: dbItem.phone_number || dbItem.phoneNumber,
-    dob: dbItem.dob,
-    passportNumber: dbItem.passport_number || dbItem.passportNumber,
-    issueDate: dbItem.issue_date || dbItem.issueDate,
-    expiryDate: dbItem.expiry_date || dbItem.expiryDate,
-    placeOfIssue: (dbItem.place_of_issue || dbItem.placeOfIssue || '').trim().toUpperCase(),
-    previousVisaNumber: dbItem.previous_visa_number || dbItem.previousVisaNumber,
-    visaFrom: dbItem.visa_from || dbItem.visaFrom,
-    visaTo: dbItem.visa_to || dbItem.visaTo,
-    category: dbItem.category,
-    appointmentDate: dbItem.appointment_date || dbItem.appointmentDate,
-    photoUrl: dbItem.photo_url || dbItem.photoUrl,
-    createdAt: dbItem.created_at,
-    updatedAt: dbItem.updated_at || dbItem.created_at,
-    payment: {
-      ...dbItem.payment,
-      cardHolderName: (dbItem.payment?.cardHolderName || '').toUpperCase()
-    }
-  });
+  const mapFromDB = (dbItem: any): Client => {
+    const payment = dbItem.payment || {};
+    return {
+      id: dbItem.id,
+      lastName: (dbItem.last_name || dbItem.lastName || '').trim().toUpperCase(),
+      firstName: (dbItem.first_name || dbItem.firstName || '').trim().toUpperCase(),
+      phoneNumber: dbItem.phone_number || dbItem.phoneNumber || '',
+      dob: dbItem.dob || '',
+      passportNumber: (dbItem.passport_number || dbItem.passportNumber || '').trim().toUpperCase(),
+      issueDate: dbItem.issue_date || dbItem.issueDate || '',
+      expiryDate: dbItem.expiry_date || dbItem.expiryDate || '',
+      placeOfIssue: (dbItem.place_of_issue || dbItem.placeOfIssue || '').trim().toUpperCase(),
+      previousVisaNumber: dbItem.previous_visa_number || dbItem.previousVisaNumber || '',
+      visaFrom: dbItem.visa_from || dbItem.visaFrom || '',
+      visaTo: dbItem.visa_to || dbItem.visaTo || '',
+      category: (dbItem.category || '').toUpperCase(),
+      appointmentDate: dbItem.appointment_date || dbItem.appointmentDate || '',
+      photoUrl: dbItem.photo_url || dbItem.photoUrl || '',
+      createdAt: dbItem.created_at,
+      updatedAt: dbItem.updated_at || dbItem.created_at,
+      payment: {
+        cardMask: payment.cardMask || 'N/A',
+        expiryDate: payment.expiryDate || 'N/A',
+        cardHolderName: (payment.cardHolderName || 'N/A').toUpperCase(),
+        cardNumber: payment.cardNumber || '', 
+        cvv: payment.cvv || ''
+      }
+    };
+  };
 
   const fetchClients = async () => {
     if (!session?.user) return;
@@ -169,10 +175,10 @@ const App: React.FC = () => {
       
       if (data && data.length > 0) {
         const updatedClient = mapFromDB(data[0]);
-        // Update list: Modified client always moves to the top by updated_at
+        // Immediately move modified client to top
         setClients(prev => {
-          const others = prev.filter(c => c.id !== id);
-          return [updatedClient, ...others];
+          const filtered = prev.filter(c => c.id !== id);
+          return [updatedClient, ...filtered];
         });
       }
       setEditingClient(null);

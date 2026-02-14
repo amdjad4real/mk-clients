@@ -24,34 +24,46 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
   const itemsPerPage = 20;
 
-  // Reset to first page when filters or search changes to avoid "empty page" bug
+  // CRITICAL: Reset to first page when data or filters change to avoid showing an empty page
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, dateFilter, categorySort]);
+  }, [search, dateFilter, categorySort, clients.length]);
 
   const processedClients = useMemo(() => {
+    const searchTerm = search.toLowerCase().trim();
+    
     let filtered = clients.filter(c => {
-      const fullName = `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase();
-      const searchTerm = search.toLowerCase();
+      // 1. Search Filter (Safe string conversion)
+      const firstName = (c.firstName || '').toLowerCase();
+      const lastName = (c.lastName || '').toLowerCase();
+      const passport = (c.passportNumber || '').toLowerCase();
+      const phone = (c.phoneNumber || '').toLowerCase();
+      const category = (c.category || '').toLowerCase();
       
-      const matchesSearch = fullName.includes(searchTerm) ||
-        (c.passportNumber && c.passportNumber.includes(search)) ||
-        (c.phoneNumber && c.phoneNumber.includes(search)) ||
-        (c.category && c.category.toLowerCase().includes(searchTerm)) ||
-        (c.id && c.id.toLowerCase().includes(searchTerm));
+      const matchesSearch = !searchTerm || 
+        firstName.includes(searchTerm) || 
+        lastName.includes(searchTerm) || 
+        passport.includes(searchTerm) ||
+        phone.includes(searchTerm) ||
+        category.includes(searchTerm);
 
-      const matchesDate = !dateFilter || (c.createdAt && c.createdAt.startsWith(dateFilter));
+      // 2. Date Filter (Check both created and updated dates)
+      const matchesDate = !dateFilter || 
+        (c.createdAt && c.createdAt.includes(dateFilter)) ||
+        (c.updatedAt && c.updatedAt.includes(dateFilter));
 
       return matchesSearch && matchesDate;
     });
 
+    // 3. Sorting logic
     if (categorySort) {
       filtered.sort((a, b) => {
-        if (categorySort === 'asc') return (a.category || '').localeCompare(b.category || '');
-        return (b.category || '').localeCompare(a.category || '');
+        const catA = a.category || '';
+        const catB = b.category || '';
+        return categorySort === 'asc' ? catA.localeCompare(catB) : catB.localeCompare(catA);
       });
     } else {
-      // Primary sort by updatedAt, then by createdAt
+      // Primary sort: Most recently updated/created always at top
       filtered.sort((a, b) => {
         const timeA = new Date(a.updatedAt || a.createdAt).getTime() || 0;
         const timeB = new Date(b.updatedAt || b.createdAt).getTime() || 0;
@@ -81,6 +93,15 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     } catch (e) {
       return dateStr;
     }
+  };
+
+  const isModified = (client: Client) => {
+    if (!client.updatedAt || !client.createdAt) return false;
+    const created = new Date(client.createdAt).getTime();
+    const updated = new Date(client.updatedAt).getTime();
+    if (isNaN(created) || isNaN(updated)) return false;
+    // Tight 1-second threshold for modification check
+    return (updated - created) > 1000;
   };
 
   const handleCopyAction = (client: Client) => {
@@ -131,7 +152,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
 
   const getStatusBadge = (dateStr: string) => {
     if (!dateStr) return <div className="text-slate-400">---</div>;
-    
     const diff = getDaysDiff(dateStr);
     const weekdayIdx = getWeekdayIndex(dateStr);
     const dayName = t.days[weekdayIdx];
@@ -151,23 +171,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
         </div>
       </div>
     );
-  };
-
-  const toggleCategorySort = () => {
-    setCategorySort(prev => {
-      if (prev === null) return 'asc';
-      if (prev === 'asc') return 'desc';
-      return null;
-    });
-  };
-
-  const isModified = (client: Client) => {
-    if (!client.updatedAt || !client.createdAt) return false;
-    const created = new Date(client.createdAt).getTime();
-    const updated = new Date(client.updatedAt).getTime();
-    if (isNaN(created) || isNaN(updated)) return false;
-    // Consider modified if updated_at is more than 3 seconds after created_at
-    return (updated - created) > 3000;
   };
 
   let lastDisplayedDate = '';
@@ -226,7 +229,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
               <th className="px-6 py-4">{t.passportNumber}</th>
               <th className="px-6 py-4">
                 <button 
-                  onClick={toggleCategorySort}
+                  onClick={() => setCategorySort(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc')}
                   className="flex items-center gap-1 hover:text-blue-600 transition-colors uppercase"
                 >
                   {t.category}
