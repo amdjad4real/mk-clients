@@ -1,8 +1,5 @@
 
--- Enable RLS
-ALTER TABLE IF EXISTS clients ENABLE ROW LEVEL SECURITY;
-
--- Clients Table
+-- Ensure the clients table exists with the correct structure
 CREATE TABLE IF NOT EXISTS clients (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -25,10 +22,17 @@ CREATE TABLE IF NOT EXISTS clients (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Drop old policy if it exists
-DROP POLICY IF EXISTS "Users can only see their own clients" ON clients;
+-- Enable RLS (Must be on for policies to work)
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
--- New Policies: Allow all authenticated admins to see and manage all clients
+-- Clear any existing restrictive policies
+DROP POLICY IF EXISTS "Users can only see their own clients" ON clients;
+DROP POLICY IF EXISTS "Authenticated users can select all clients" ON clients;
+DROP POLICY IF EXISTS "Authenticated users can insert clients" ON clients;
+DROP POLICY IF EXISTS "Authenticated users can update all clients" ON clients;
+DROP POLICY IF EXISTS "Authenticated users can delete all clients" ON clients;
+
+-- Create permissive policies for authenticated admins
 CREATE POLICY "Authenticated users can select all clients" ON clients
   FOR SELECT USING (auth.role() = 'authenticated');
 
@@ -40,6 +44,3 @@ CREATE POLICY "Authenticated users can update all clients" ON clients
 
 CREATE POLICY "Authenticated users can delete all clients" ON clients
   FOR DELETE USING (auth.role() = 'authenticated');
-
--- Cleanup unused history table
-DROP TABLE IF EXISTS client_activity;

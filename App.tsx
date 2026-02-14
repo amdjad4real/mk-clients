@@ -57,80 +57,64 @@ const App: React.FC = () => {
 
   const mapToDB = (data: ClientFormData, userId: string) => ({
     user_id: userId,
-    last_name: String(data.lastName || '').trim().toUpperCase(),
-    first_name: String(data.firstName || '').trim().toUpperCase(),
-    phone_number: String(data.phoneNumber || '').trim(),
-    dob: data.dob || '',
-    passport_number: String(data.passportNumber || '').trim().toUpperCase(),
-    issue_date: data.issueDate || '',
-    expiry_date: data.expiryDate || '',
-    place_of_issue: String(data.placeOfIssue || '').trim().toUpperCase(),
-    previous_visa_number: String(data.previousVisaNumber || '').trim(),
-    visa_from: data.visaFrom || '',
-    visa_to: data.visaTo || '',
-    category: String(data.category || '').toUpperCase(),
-    appointment_date: data.appointmentDate || '',
-    photo_url: data.photoUrl || '',
+    last_name: data.lastName.toUpperCase(),
+    first_name: data.firstName.toUpperCase(),
+    phone_number: data.phoneNumber,
+    dob: data.dob,
+    passport_number: data.passportNumber.toUpperCase(),
+    issue_date: data.issueDate,
+    expiry_date: data.expiryDate,
+    place_of_issue: data.placeOfIssue.toUpperCase(),
+    previous_visa_number: data.previousVisaNumber,
+    visa_from: data.visaFrom,
+    visa_to: data.visaTo,
+    category: data.category,
+    appointment_date: data.appointmentDate,
+    photo_url: data.photoUrl,
     updated_at: new Date().toISOString(),
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
-      expiryDate: data.payment.expiryDate || 'N/A',
-      cardHolderName: String(data.payment.cardHolderName || 'N/A').trim().toUpperCase(),
-      cardNumber: String(data.payment.cardNumber || '').trim(), 
-      cvv: String(data.payment.cvv || '').trim()
+      expiryDate: data.payment.expiryDate,
+      cardHolderName: data.payment.cardHolderName.toUpperCase(),
+      cardNumber: data.payment.cardNumber,
+      cvv: data.payment.cvv
     }
   });
 
-  const mapFromDB = (dbItem: any): Client => {
-    const p = dbItem.payment || {};
-    return {
-      id: dbItem.id,
-      lastName: String(dbItem.last_name || dbItem.lastName || '').trim().toUpperCase(),
-      firstName: String(dbItem.first_name || dbItem.firstName || '').trim().toUpperCase(),
-      phoneNumber: String(dbItem.phone_number || dbItem.phoneNumber || '').trim(),
-      dob: dbItem.dob || '',
-      passportNumber: String(dbItem.passport_number || dbItem.passportNumber || '').trim().toUpperCase(),
-      issueDate: dbItem.issue_date || dbItem.issueDate || '',
-      expiryDate: dbItem.expiry_date || dbItem.expiryDate || '',
-      placeOfIssue: String(dbItem.place_of_issue || dbItem.placeOfIssue || '').trim().toUpperCase(),
-      previousVisaNumber: String(dbItem.previous_visa_number || dbItem.previousVisaNumber || '').trim(),
-      visaFrom: dbItem.visa_from || dbItem.visaFrom || '',
-      visaTo: dbItem.visa_to || dbItem.visaTo || '',
-      category: String(dbItem.category || '').toUpperCase(),
-      appointmentDate: dbItem.appointment_date || dbItem.appointmentDate || '',
-      photoUrl: dbItem.photo_url || dbItem.photoUrl || '',
-      createdAt: dbItem.created_at || dbItem.createdAt || new Date().toISOString(),
-      updatedAt: dbItem.updated_at || dbItem.updatedAt || dbItem.created_at || new Date().toISOString(),
-      payment: {
-        cardMask: p.cardMask || 'N/A',
-        expiryDate: p.expiryDate || 'N/A',
-        cardHolderName: String(p.cardHolderName || 'N/A').trim().toUpperCase(),
-        cardNumber: p.cardNumber || '', 
-        cvv: p.cvv || ''
-      }
-    };
-  };
+  const mapFromDB = (dbItem: any): Client => ({
+    id: dbItem.id,
+    lastName: dbItem.last_name,
+    firstName: dbItem.first_name,
+    phoneNumber: dbItem.phone_number,
+    dob: dbItem.dob,
+    passportNumber: dbItem.passport_number,
+    issueDate: dbItem.issue_date,
+    expiryDate: dbItem.expiry_date,
+    placeOfIssue: dbItem.place_of_issue,
+    previousVisaNumber: dbItem.previous_visa_number,
+    visaFrom: dbItem.visa_from,
+    visaTo: dbItem.visa_to,
+    category: dbItem.category,
+    appointmentDate: dbItem.appointment_date,
+    photoUrl: dbItem.photo_url,
+    createdAt: dbItem.created_at,
+    updatedAt: dbItem.updated_at,
+    payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '' }
+  });
 
   const fetchClients = useCallback(async () => {
     if (!session?.user) return;
     setIsFetchingClients(true);
     try {
-      console.log('Fetching clients from Supabase...');
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Supabase Query Error:', error);
-        throw error;
-      }
-      
-      console.log(`Fetched ${data?.length || 0} clients.`);
+      if (error) throw error;
       setClients((data || []).map(mapFromDB));
-    } catch (err: any) {
-      console.error('Error in fetchClients:', err);
-      // Optional: alert('Failed to fetch clients: ' + err.message);
+    } catch (err) {
+      console.error('Error fetching clients:', err);
     } finally {
       setIsFetchingClients(false);
     }
@@ -162,7 +146,6 @@ const App: React.FC = () => {
         setCopyingClient(null);
       }
     } catch (err: any) {
-      console.error('Registration failed:', err);
       alert('Registration failed: ' + err.message);
       throw err;
     }
@@ -182,14 +165,10 @@ const App: React.FC = () => {
       
       if (data && data.length > 0) {
         const updatedClient = mapFromDB(data[0]);
-        setClients(prev => {
-          const filtered = prev.filter(c => c.id !== id);
-          return [updatedClient, ...filtered];
-        });
+        setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
       }
       setEditingClient(null);
     } catch (err: any) {
-      console.error('Update failed:', err);
       alert('Update failed: ' + err.message);
       throw err;
     }
@@ -213,11 +192,11 @@ const App: React.FC = () => {
 
   const handleCopyClient = (client: Client) => {
     const copiedData: Partial<ClientFormData> = {
-      lastName: client.lastName.toUpperCase(),
-      firstName: client.firstName.toUpperCase(),
+      lastName: client.lastName,
+      firstName: client.firstName,
       phoneNumber: client.phoneNumber,
       dob: client.dob,
-      placeOfIssue: client.placeOfIssue.toUpperCase(),
+      placeOfIssue: client.placeOfIssue,
       category: client.category,
       appointmentDate: client.appointmentDate,
       photoUrl: client.photoUrl,
@@ -232,10 +211,7 @@ const App: React.FC = () => {
   if (isLoadingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-bold animate-pulse">Initializing Portal...</p>
-        </div>
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -258,11 +234,6 @@ const App: React.FC = () => {
           <div className="flex items-center space-x-2 rtl:space-x-reverse mb-6">
             <h2 className="text-2xl font-bold">{t.registeredClients}</h2>
             {isFetchingClients && <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>}
-            {!isFetchingClients && (
-                <button onClick={fetchClients} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400" title="Refresh list">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                </button>
-            )}
           </div>
           <ClientTable 
             clients={clients} 

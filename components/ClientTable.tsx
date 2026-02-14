@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, CreditCard, Calendar as CalendarIcon, X, Tag, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getDaysDiff, getWeekdayIndex } from '../utils/helpers';
@@ -25,52 +25,25 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
   const itemsPerPage = 20;
 
-  // Reset to page 1 when search or filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, dateFilter, categorySort]);
-
   const processedClients = useMemo(() => {
-    if (!clients || !Array.isArray(clients)) return [];
-
-    const searchTerm = search.toLowerCase().trim();
-    
     let filtered = clients.filter(c => {
-      // 1. Search Filter (Strict safe check)
-      const firstName = (c.firstName || '').toLowerCase();
-      const lastName = (c.lastName || '').toLowerCase();
-      const passport = (c.passportNumber || '').toLowerCase();
-      const phone = (c.phoneNumber || '').toLowerCase();
-      const category = (c.category || '').toLowerCase();
-      
-      const matchesSearch = !searchTerm || 
-        firstName.includes(searchTerm) || 
-        lastName.includes(searchTerm) || 
-        passport.includes(searchTerm) ||
-        phone.includes(searchTerm) ||
-        category.includes(searchTerm);
+      const searchTerm = search.toLowerCase();
+      const matchesSearch = !search || 
+        c.firstName.toLowerCase().includes(searchTerm) || 
+        c.lastName.toLowerCase().includes(searchTerm) || 
+        c.passportNumber.toLowerCase().includes(searchTerm);
 
-      // 2. Date Filter (Check both created and updated dates)
       const matchesDate = !dateFilter || 
-        (c.createdAt && typeof c.createdAt === 'string' && c.createdAt.includes(dateFilter)) ||
-        (c.updatedAt && typeof c.updatedAt === 'string' && c.updatedAt.includes(dateFilter));
+        (c.createdAt && c.createdAt.includes(dateFilter)) ||
+        (c.updatedAt && c.updatedAt.includes(dateFilter));
 
       return matchesSearch && matchesDate;
     });
 
-    // 3. Sorting logic
     if (categorySort) {
       filtered.sort((a, b) => {
-        const catA = a.category || '';
-        const catB = b.category || '';
-        return categorySort === 'asc' ? catA.localeCompare(catB) : catB.localeCompare(catA);
-      });
-    } else {
-      // Primary sort: Most recently updated/created always at top
-      filtered.sort((a, b) => {
-        const timeA = new Date(a.updatedAt || a.createdAt).getTime() || 0;
-        const timeB = new Date(b.updatedAt || b.createdAt).getTime() || 0;
-        return timeB - timeA;
+        if (categorySort === 'asc') return a.category.localeCompare(b.category);
+        return b.category.localeCompare(a.category);
       });
     }
 
@@ -82,30 +55,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '---';
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-      return date.toLocaleDateString(lang === 'ar' ? 'ar-EG' : lang === 'fr' ? 'fr-FR' : 'en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch (e) {
-      return dateStr;
-    }
-  };
-
-  const isModified = (client: Client) => {
-    if (!client.updatedAt || !client.createdAt) return false;
-    const created = new Date(client.createdAt).getTime();
-    const updated = new Date(client.updatedAt).getTime();
-    if (isNaN(created) || isNaN(updated)) return false;
-    // Buffer for database insertion latency (consider modified if updated > 2 seconds after created)
-    return (updated - created) > 2000;
-  };
 
   const handleCopyAction = (client: Client) => {
     const details = [
@@ -176,8 +125,6 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
     );
   };
 
-  let lastDisplayedDate = '';
-
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
       <div className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-700 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
@@ -247,124 +194,71 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {!isFetching && paginatedClients.length > 0 ? (
               paginatedClients.map((client) => {
-                const effectiveDate = client.updatedAt || client.createdAt;
-                const currentDate = effectiveDate ? String(effectiveDate).split('T')[0] : '';
-                const showDateHeader = !categorySort && currentDate !== lastDisplayedDate;
                 const isOrn2 = client.category === 'ORN2';
-                const isAlg2 = client.category === 'ALG2';
-                const modified = isModified(client);
-                
-                if (showDateHeader) {
-                  lastDisplayedDate = currentDate;
-                }
-
                 return (
-                  <React.Fragment key={client.id}>
-                    {showDateHeader && (
-                      <tr className="bg-blue-50/50 dark:bg-blue-900/10">
-                        <td colSpan={7} className="px-6 py-3 border-b border-blue-100 dark:border-blue-900/20">
-                          <div className="flex items-center gap-3">
-                            <CalendarIcon className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm font-black text-blue-700 dark:text-blue-400 uppercase tracking-tighter">
-                              {formatDate(currentDate)}
-                              {currentDate === new Date().toISOString().split('T')[0] && (
-                                <span className="ml-2 px-1.5 py-0.5 bg-blue-600 text-white text-[9px] rounded-full shadow-lg shadow-blue-500/30">LATEST</span>
-                              )}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    <tr className={`transition-colors group ${
-                      isOrn2 
-                        ? 'bg-amber-50/70 dark:bg-amber-900/20 hover:bg-amber-100/80 dark:hover:bg-amber-900/30 border-l-4 border-amber-500' 
-                        : isAlg2
-                        ? 'bg-emerald-50/70 dark:bg-emerald-900/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/30 border-l-4 border-emerald-500'
-                        : 'hover:bg-slate-50/50 dark:hover:bg-slate-700/30'
-                    }`}>
-                      <td className="px-6 py-4">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600">
-                          {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-slate-400" />}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-bold text-slate-900 dark:text-white uppercase leading-tight">
-                            {client.firstName} {client.lastName}
-                          </div>
-                          {modified && (
-                            <span className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black rounded shadow-md uppercase tracking-tighter animate-pulse">
-                              {t.modified}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-slate-500 mt-0.5 font-bold uppercase">
-                          DOB: {client.dob}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">
-                        {client.passportNumber}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${
-                          isOrn2 
-                            ? 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100' 
-                            : isAlg2
-                            ? 'bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100'
-                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                        }`}>
-                          {client.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {getStatusBadge(client.appointmentDate)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase leading-none mb-1">{client.payment.cardMask || 'N/A'}</div>
-                        <div className="text-[10px] text-slate-500 font-medium uppercase leading-none">{client.payment.expiryDate}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse opacity-40 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => onEdit(client)} title={t.edit} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleCopyAction(client)} title={t.copy} className={`p-1.5 rounded-lg transition-colors ${copiedId === client.id ? 'text-green-500' : 'text-green-600 hover:bg-green-50'}`}>
-                            {copiedId === client.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                          </button>
-                          <button onClick={() => handleCopyPaymentAction(client)} title={t.copyPayment} className={`p-1.5 rounded-lg transition-colors ${copiedPaymentId === client.id ? 'text-amber-500' : 'text-amber-600 hover:bg-amber-50'}`}>
-                            {copiedPaymentId === client.id ? <Check className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
-                          </button>
-                          <button onClick={() => onDelete(client.id)} title={t.delete} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </React.Fragment>
+                  <tr key={client.id} className={`transition-colors group ${
+                    isOrn2 
+                      ? 'bg-amber-50/70 dark:bg-amber-900/20 hover:bg-amber-100/80 dark:hover:bg-amber-900/30 border-l-4 border-amber-500 shadow-sm' 
+                      : 'hover:bg-slate-50/50 dark:hover:bg-slate-700/30'
+                  }`}>
+                    <td className="px-6 py-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 shadow-inner">
+                        {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-slate-400" />}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold text-slate-900 dark:text-white uppercase leading-tight">
+                        {client.firstName} {client.lastName}
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5 font-bold uppercase">
+                        DOB: {client.dob}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">
+                      {client.passportNumber}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${
+                        isOrn2 
+                          ? 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 shadow-sm shadow-amber-500/20' 
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      }`}>
+                        {client.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(client.appointmentDate)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase leading-none mb-1">{client.payment.cardMask || 'N/A'}</div>
+                      <div className="text-[10px] text-slate-500 font-medium uppercase leading-none">{client.payment.expiryDate}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse opacity-40 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => onEdit(client)} title={t.edit} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleCopyAction(client)} title={t.copy} className={`p-1.5 rounded-lg transition-colors ${copiedId === client.id ? 'text-green-500' : 'text-green-600 hover:bg-green-50'}`}>
+                          {copiedId === client.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                        <button onClick={() => handleCopyPaymentAction(client)} title={t.copyPayment} className={`p-1.5 rounded-lg transition-colors ${copiedPaymentId === client.id ? 'text-amber-500' : 'text-amber-600 hover:bg-amber-50'}`}>
+                          {copiedPaymentId === client.id ? <Check className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                        </button>
+                        <button onClick={() => onDelete(client.id)} title={t.delete} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 );
               })
             ) : (
               <tr>
                 <td colSpan={7} className="px-6 py-32 text-center">
-                  {isFetching ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-sm font-bold text-slate-400 animate-pulse uppercase tracking-widest">Updating Records...</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-4 text-slate-400">
-                      <User className="w-12 h-12 opacity-20" />
-                      <p className="italic text-lg">No records found.</p>
-                      {(search || dateFilter) && (
-                        <button 
-                          onClick={() => { setSearch(''); setDateFilter(''); }}
-                          className="text-blue-600 text-sm font-bold hover:underline"
-                        >
-                          Clear all filters
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex flex-col items-center gap-4 text-slate-400">
+                    <User className="w-12 h-12 opacity-20" />
+                    <p className="italic text-lg font-medium">No records found.</p>
+                  </div>
                 </td>
               </tr>
             )}
