@@ -302,16 +302,16 @@ const App: React.FC = () => {
                   <Users className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="font-black uppercase tracking-tighter text-slate-900 dark:text-white text-2xl">Active Agents Network</h3>
+                  <h3 className="font-black uppercase tracking-tighter text-slate-900 dark:text-white text-2xl">{t.activeAgentsNetwork}</h3>
                   <div className="flex items-center gap-3 mt-1.5">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <UserCheck className="w-3.5 h-3.5" /> {agents.length} Nodes Synchronized
+                      <UserCheck className="w-3.5 h-3.5" /> {agents.length} {t.nodesSynchronized}
                     </p>
                     <button 
                       onClick={fetchClients} 
                       className="flex items-center gap-1 text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-600 transition-colors"
                     >
-                      <RefreshCw className={`w-3 h-3 ${isFetchingClients ? 'animate-spin' : ''}`} /> Force Sync
+                      <RefreshCw className={`w-3 h-3 ${isFetchingClients ? 'animate-spin' : ''}`} /> {t.forceSync}
                     </button>
                   </div>
                 </div>
@@ -324,7 +324,7 @@ const App: React.FC = () => {
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900"
                    >
                      {selectedUserIds.length === agents.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-                     {selectedUserIds.length === agents.length ? 'Deselect All' : 'Select All'}
+                     {selectedUserIds.length === agents.length ? t.deselectAll : t.selectAll}
                    </button>
                  )}
                  <button 
@@ -336,7 +336,7 @@ const App: React.FC = () => {
                   }`}
                  >
                    <Layers className="w-3.5 h-3.5" />
-                   Bulk Select {isBulkMode ? 'ON' : 'OFF'}
+                   {t.bulkSelect} {isBulkMode ? t.on : t.off}
                  </button>
               </div>
             </div>
@@ -354,8 +354,8 @@ const App: React.FC = () => {
                   <LayoutGrid className="w-6 h-6" />
                 </div>
                 <div className="flex flex-col items-start leading-none">
-                  <span>Global Pool</span>
-                  <span className={`text-[8px] mt-1 opacity-60`}>All Registered Data</span>
+                  <span>{t.globalPool}</span>
+                  <span className={`text-[8px] mt-1 opacity-60`}>{t.allRegisteredData}</span>
                 </div>
                 <span className={`px-2 py-1 rounded-lg text-[10px] ${selectedUserIds.length === 0 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600'}`}>
                   {clients.length}
@@ -410,7 +410,7 @@ const App: React.FC = () => {
                </div>
                <div>
                  <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 dark:text-white leading-none">{t.addNewClient}</h2>
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2.5">Data Entry Node Protocol</p>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2.5">{t.dataEntryNode}</p>
                </div>
              </div>
              <button 
@@ -421,7 +421,7 @@ const App: React.FC = () => {
                   : 'bg-indigo-600 text-white border-indigo-800 hover:bg-indigo-700 shadow-2xl shadow-indigo-500/30'
                }`}
              >
-               {isFormOpen ? 'Deactivate Terminal' : 'Activate Terminal'}
+               {isFormOpen ? t.deactivateTerminal : t.activateTerminal}
              </button>
           </div>
           
@@ -449,7 +449,7 @@ const App: React.FC = () => {
             {isAdmin && selectedUserIds.length > 0 && (
               <div className="flex items-center gap-4 bg-indigo-600 text-white px-8 py-3 rounded-2xl text-[11px] font-black uppercase shadow-[0_15px_30px_rgba(79,70,229,0.3)] border border-indigo-400 animate-in slide-in-from-right duration-500">
                 <Filter className="w-5 h-5" />
-                Aggregated View: {selectedUserIds.length} Nodes Selected
+                {t.aggregatedView}: {selectedUserIds.length} {t.nodesSelected}
               </div>
             )}
           </div>
@@ -475,8 +475,8 @@ const App: React.FC = () => {
                   <ShieldAlert className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <h3 className="text-4xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Secure Edit Engine</h3>
-                  <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2">File Access Granted: {editingClient.passportNumber}</p>
+                  <h3 className="text-4xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">{t.secureEditEngine}</h3>
+                  <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2">{t.fileAccessGranted}: {editingClient.passportNumber}</p>
                 </div>
               </div>
               <button 
