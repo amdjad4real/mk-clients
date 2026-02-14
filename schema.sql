@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS clients (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS (Must be on for policies to work)
+-- Enable RLS
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
 -- Clear any existing restrictive policies
@@ -32,15 +32,26 @@ DROP POLICY IF EXISTS "Authenticated users can insert clients" ON clients;
 DROP POLICY IF EXISTS "Authenticated users can update all clients" ON clients;
 DROP POLICY IF EXISTS "Authenticated users can delete all clients" ON clients;
 
--- Create permissive policies for authenticated admins
-CREATE POLICY "Authenticated users can select all clients" ON clients
-  FOR SELECT USING (auth.role() = 'authenticated');
+-- Updated Policy Set for Proper Isolation
+CREATE POLICY "Select isolation" ON clients
+  FOR SELECT USING (
+    (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
+    (auth.uid() = user_id)
+  );
 
-CREATE POLICY "Authenticated users can insert clients" ON clients
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Insert own" ON clients
+  FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+  );
 
-CREATE POLICY "Authenticated users can update all clients" ON clients
-  FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Update isolation" ON clients
+  FOR UPDATE USING (
+    (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
+    (auth.uid() = user_id)
+  );
 
-CREATE POLICY "Authenticated users can delete all clients" ON clients
-  FOR DELETE USING (auth.role() = 'authenticated');
+CREATE POLICY "Delete isolation" ON clients
+  FOR DELETE USING (
+    (auth.jwt() ->> 'email' = 'admin@mkservice.com') OR 
+    (auth.uid() = user_id)
+  );
