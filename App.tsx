@@ -43,11 +43,17 @@ const App: React.FC = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session && session.user?.email !== 'admin@mkservice.com') {
+        setIsFormOpen(true);
+      }
       setIsLoadingSession(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session && session.user?.email !== 'admin@mkservice.com') {
+        setIsFormOpen(true);
+      }
     });
 
     return () => subscription.unsubscribe();
