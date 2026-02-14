@@ -28,13 +28,13 @@ const ClientTable: React.FC<ClientTableProps> = ({
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
 
   /**
-   * CRITICAL: Normalizes the activity date to local YYYY-MM-DD.
-   * This is used for both the grouping keys and the date filter comparison.
+   * CRITICAL FIX: Always group by Registration Date (createdAt)
+   * This prevents records from jumping to "Today" just because they were modified.
    */
-  const getActivityDate = (client: Client) => {
-    const d = new Date(client.updatedAt || client.createdAt);
+  const getRegistrationDate = (client: Client) => {
+    // We use createdAt because that defines when the client was "added"
+    const d = new Date(client.createdAt);
     if (isNaN(d.getTime())) return 'Unknown';
-    // Use local date parts to ensure the filter (which is local) matches correctly
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -42,7 +42,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
   };
 
   /**
-   * Formats the YYYY-MM-DD key into the user's requested DD/MM/YYYY header format.
+   * Header format: DD/MM/YYYY
    */
   const formatDisplayDate = (dateStr: string) => {
     if (dateStr === 'Unknown') return t.uncategorizedHistory;
@@ -62,36 +62,34 @@ const ClientTable: React.FC<ClientTableProps> = ({
     return maps[category] || { row: 'bg-slate-50/30 dark:bg-slate-800/20 border-slate-400', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300' };
   };
 
-  // STEP 1: Filter clients based on search text AND the date picker
+  // Filter based on Search and the Registration Date
   const filteredVisibleClients = useMemo(() => {
     const searchTerm = search.toLowerCase().trim();
     return clients.filter(c => {
-      const activityDate = getActivityDate(c); // YYYY-MM-DD local
+      const regDate = getRegistrationDate(c);
       
       const matchesSearch = !searchTerm || 
         c.firstName.toLowerCase().includes(searchTerm) || 
         c.lastName.toLowerCase().includes(searchTerm) || 
         c.passportNumber.toLowerCase().includes(searchTerm);
       
-      // Strict date matching: input type="date" value is YYYY-MM-DD
-      const matchesDate = !dateFilter || activityDate === dateFilter;
+      const matchesDate = !dateFilter || regDate === dateFilter;
       
       return matchesSearch && matchesDate;
     });
   }, [clients, search, dateFilter]);
 
-  // STEP 2: Group the filtered results into dates
+  // Group filtered results into historical dates
   const groupedClients = useMemo(() => {
-    // Sort all records chronologically first (Newest seconds-first)
     const sortedList = [...filteredVisibleClients].sort((a, b) => {
-      const tA = new Date(a.updatedAt || a.createdAt).getTime();
-      const tB = new Date(b.updatedAt || b.createdAt).getTime();
-      return tB - tA;
+      const tA = new Date(a.createdAt).getTime();
+      const tB = new Date(b.createdAt).getTime();
+      return tB - tA; // Newest registration first
     });
 
     const groups: Record<string, Client[]> = {};
     sortedList.forEach(client => {
-      const dateKey = getActivityDate(client);
+      const dateKey = getRegistrationDate(client);
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(client);
     });
@@ -108,8 +106,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
     raw += `Place of Issue: ${client.placeOfIssue.toUpperCase()}\n`;
     raw += `Category: ${client.category}`;
 
-    const hasVisaInfo = client.previousVisaNumber || client.visaFrom || client.visaTo;
-    if (hasVisaInfo) {
+    if (client.previousVisaNumber || client.visaFrom || client.visaTo) {
       raw += `\nPrevious Visa Number: ${client.previousVisaNumber || ''}\n`;
       raw += `Visa Valid From: ${client.visaFrom || ''}\n`;
       raw += `Visa Valid To: ${client.visaTo || ''}`;
@@ -147,7 +144,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Precision Search and Date Filter Bar */}
+      {/* Search and Fixed Registration Date Filter */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 flex flex-col md:flex-row gap-5">
         <div className="relative flex-1">
           <Search className="absolute left-4 rtl:left-auto rtl:right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -161,12 +158,12 @@ const ClientTable: React.FC<ClientTableProps> = ({
         </div>
         <div className="flex gap-3">
           <div className="relative min-w-[220px]">
-            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-500 z-10 pointer-events-none" />
+            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500 z-10 pointer-events-none" />
             <input 
               type="date" 
               value={dateFilter} 
               onChange={(e) => setDateFilter(e.target.value)} 
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-blue-500 dark:border-slate-700 bg-blue-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 outline-none font-black transition-all hover:border-blue-600 shadow-sm" 
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-indigo-500 dark:border-slate-700 bg-indigo-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/20 outline-none font-black transition-all hover:border-indigo-600 shadow-sm" 
             />
           </div>
           <button 
@@ -216,9 +213,14 @@ const ClientTable: React.FC<ClientTableProps> = ({
                         const isModified = isAdmin && client.isModified;
                         const styles = getCategoryStyles(client.category);
                         const isSelected = selectedClientIds.includes(client.id);
-                        // Accurate local timestamp including seconds to prevent collision visuals
-                        const timestamp = new Date(client.updatedAt || client.createdAt);
-                        const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        
+                        // We use the Registration Time for the main clock display
+                        const regTime = new Date(client.createdAt);
+                        const regTimeStr = regTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                        // If modified, we show the Update time as secondary info
+                        const modTime = new Date(client.updatedAt);
+                        const modTimeStr = modTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                         return (
                           <tr key={client.id} className={`group transition-all border-l-[8px] ${isSelected ? 'bg-indigo-50/40 dark:bg-indigo-900/20 border-indigo-600' : styles.row} ${isModified && !isSelected ? 'bg-red-50/20 dark:bg-red-950/20 animate-pulse' : ''}`}>
@@ -247,13 +249,13 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                         )}
                                       </div>
                                       <div className="text-[7px] font-black text-red-600/90 mt-0.5 whitespace-nowrap px-1 uppercase tracking-tighter">
-                                        {timestamp.toLocaleDateString()} {timeStr}
+                                        MOD: {modTime.toLocaleDateString()} {modTimeStr}
                                       </div>
                                     </div>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 mt-1">
-                                  <Clock className="w-3 h-3" /> {timeStr}
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 mt-1" title="Registration Time">
+                                  <Clock className="w-3 h-3" /> {regTimeStr}
                                 </div>
                               </div>
                             </td>
