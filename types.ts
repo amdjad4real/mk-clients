@@ -20,6 +20,7 @@ export interface Client {
   photoUrl?: string;
   createdAt: string; // ISO timestamp from DB
   updatedAt: string; // ISO timestamp for modifications
+  isEdited?: boolean; // UI-only flag for session persistence
   payment: {
     cardMask: string;
     expiryDate: string;
@@ -36,6 +37,6 @@ export interface PaymentData {
   cvv: string;
 }
 
-export interface ClientFormData extends Omit<Client, 'id' | 'payment' | 'createdAt' | 'updatedAt'> {
+export interface ClientFormData extends Omit<Client, 'id' | 'payment' | 'createdAt' | 'updatedAt' | 'isEdited'> {
   payment: PaymentData;
 }

@@ -14,6 +14,9 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ lang, setLang, theme, setTheme, t, onLogout, userEmail }) => {
+  // Extract name from email (part before @)
+  const userName = userEmail.split('@')[0] || 'Admin';
+
   return (
     <nav className="sticky top-0 z-40 w-full bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,13 +35,14 @@ const Navbar: React.FC<NavbarProps> = ({ lang, setLang, theme, setTheme, t, onLo
 
           <div className="flex items-center space-x-4 rtl:space-x-reverse">
             {/* User Info */}
-            <div className="hidden lg:flex items-center space-x-2 rtl:space-x-reverse border-r dark:border-slate-700 pr-4 rtl:pr-0 rtl:pl-4">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800">
+            <div className="hidden lg:flex items-center space-x-3 rtl:space-x-reverse border-r dark:border-slate-700 pr-4 rtl:pr-0 rtl:pl-4">
+              <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800">
                 <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-none mb-0.5">{t.welcome}</span>
-                <span className="text-sm font-bold text-slate-800 dark:text-100 leading-none truncate max-w-[120px]">{userEmail}</span>
+                <span className="text-sm font-bold text-slate-800 dark:text-white leading-none whitespace-nowrap">
+                  {t.welcome} <span className="text-blue-600 dark:text-blue-400 capitalize">{userName}</span>
+                </span>
               </div>
             </div>
 

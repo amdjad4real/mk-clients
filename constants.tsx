@@ -6,7 +6,7 @@ export const CATEGORIES = ['ALG1', 'ALG2', 'ALG3', 'ORN1', 'ORN2', 'ORN3'];
 export const TRANSLATIONS = {
   en: {
     appTitle: 'MK Clients',
-    welcome: 'Welcome, Admin',
+    welcome: 'Welcome',
     logout: 'Logout',
     addNewClient: 'Add New Client',
     registeredClients: 'Registered Clients',
@@ -89,7 +89,7 @@ export const TRANSLATIONS = {
   },
   fr: {
     appTitle: 'MK Clients',
-    welcome: 'Bienvenue, Admin',
+    welcome: 'Bienvenue',
     logout: 'Déconnexion',
     addNewClient: 'Ajouter un Nouveau Client',
     registeredClients: 'Clients Enregistrés',
@@ -172,7 +172,7 @@ export const TRANSLATIONS = {
   },
   ar: {
     appTitle: 'MK Clients',
-    welcome: 'مرحباً، المسؤول',
+    welcome: 'مرحباً',
     logout: 'تسجيل الخروج',
     addNewClient: 'إضافة عميل جديد',
     registeredClients: 'العملاء المسجلون',

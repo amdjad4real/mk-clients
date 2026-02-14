@@ -71,7 +71,6 @@ const App: React.FC = () => {
     category: data.category,
     appointment_date: data.appointmentDate,
     photo_url: data.photoUrl,
-    updated_at: new Date().toISOString(),
     payment: {
       cardMask: data.payment.cardNumber ? maskCard(data.payment.cardNumber) : 'N/A',
       expiryDate: data.payment.expiryDate,
@@ -98,7 +97,7 @@ const App: React.FC = () => {
     appointmentDate: dbItem.appointment_date,
     photoUrl: dbItem.photo_url,
     createdAt: dbItem.created_at,
-    updatedAt: dbItem.updated_at,
+    updatedAt: dbItem.updated_at || dbItem.created_at,
     payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '' }
   });
 
@@ -164,8 +163,17 @@ const App: React.FC = () => {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        const updatedClient = mapFromDB(data[0]);
-        setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
+        // IMPORTANT: Manually set updatedAt and isEdited to force the flag and sorting
+        const updatedClient = {
+          ...mapFromDB(data[0]),
+          updatedAt: new Date().toISOString(), 
+          isEdited: true 
+        };
+        setClients(prev => {
+          const others = prev.filter(c => c.id !== id);
+          // Return the new list with the modified client at the top
+          return [updatedClient, ...others];
+        });
       }
       setEditingClient(null);
     } catch (err: any) {

@@ -1,8 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, ChevronLeft, ChevronRight, User, Check, CreditCard, Calendar as CalendarIcon, X, Tag, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, AlertCircle, Clock, Plane, CreditCard as CardIcon } from 'lucide-react';
 import { Client, Language } from '../types';
-import { getDaysDiff, getWeekdayIndex } from '../utils/helpers';
 
 interface ClientTableProps {
   clients: Client[];
@@ -14,18 +13,54 @@ interface ClientTableProps {
   isFetching?: boolean;
 }
 
-type SortOrder = 'asc' | 'desc' | null;
-
 const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onDelete, onCopy, isFetching }) => {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [categorySort, setCategorySort] = useState<SortOrder>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
-  const itemsPerPage = 20;
 
-  const processedClients = useMemo(() => {
+  // Helper to get activity date (latest of update or create)
+  const getActivityDate = (client: Client) => {
+    const d = new Date(client.updatedAt || client.createdAt);
+    return d.toISOString().split('T')[0];
+  };
+
+  // Category Color Map - Entire Row Styling
+  const getCategoryStyles = (category: string) => {
+    switch (category) {
+      case 'ALG1': return {
+        row: 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500',
+        badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300'
+      };
+      case 'ALG2': return {
+        row: 'bg-sky-50/50 dark:bg-sky-950/20 border-sky-500',
+        badge: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300'
+      };
+      case 'ALG3': return {
+        row: 'bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500',
+        badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300'
+      };
+      case 'ORN1': return {
+        row: 'bg-orange-50/50 dark:bg-orange-950/20 border-orange-500',
+        badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300'
+      };
+      case 'ORN2': return {
+        row: 'bg-lime-50/50 dark:bg-lime-950/20 border-lime-500',
+        badge: 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-300'
+      };
+      case 'ORN3': return {
+        row: 'bg-fuchsia-50/50 dark:bg-fuchsia-950/20 border-fuchsia-500',
+        badge: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-300'
+      };
+      default: return {
+        row: 'bg-slate-50/50 dark:bg-slate-800/50 border-slate-400',
+        badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+      };
+    }
+  };
+
+  const groupedClients = useMemo(() => {
+    // 1. Filter
     let filtered = clients.filter(c => {
       const searchTerm = search.toLowerCase();
       const matchesSearch = !search || 
@@ -33,49 +68,43 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
         c.lastName.toLowerCase().includes(searchTerm) || 
         c.passportNumber.toLowerCase().includes(searchTerm);
 
-      const matchesDate = !dateFilter || 
-        (c.createdAt && c.createdAt.includes(dateFilter)) ||
-        (c.updatedAt && c.updatedAt.includes(dateFilter));
+      const activityDate = getActivityDate(c);
+      const matchesDate = !dateFilter || activityDate === dateFilter;
 
       return matchesSearch && matchesDate;
     });
 
-    if (categorySort) {
-      filtered.sort((a, b) => {
-        if (categorySort === 'asc') return a.category.localeCompare(b.category);
-        return b.category.localeCompare(a.category);
-      });
-    }
+    // 2. Sort within all (to maintain relative order before grouping)
+    filtered.sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+      
+      // ABSOLUTE PRIORITY: Flagged as edited in current session
+      if (a.isEdited && !b.isEdited) return -1;
+      if (!a.isEdited && b.isEdited) return 1;
 
-    return filtered;
-  }, [clients, search, dateFilter, categorySort]);
+      return timeB - timeA;
+    });
 
-  const totalPages = Math.ceil(processedClients.length / itemsPerPage);
-  const paginatedClients = processedClients.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+    // 3. Group by date
+    const groups: Record<string, Client[]> = {};
+    filtered.forEach(client => {
+      const dateKey = getActivityDate(client);
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(client);
+    });
+
+    return groups;
+  }, [clients, search, dateFilter]);
 
   const handleCopyAction = (client: Client) => {
     const details = [
       `${t.lastName}: ${client.lastName}`,
       `${t.firstName}: ${client.firstName}`,
-      `${t.dob}: ${client.dob}`,
       `${t.passportNumber}: ${client.passportNumber}`,
-      `${t.issueDate}: ${client.issueDate}`,
-      `${t.expiryDate}: ${client.expiryDate}`,
-      `${t.placeOfIssue}: ${client.placeOfIssue}`,
       `${t.category}: ${client.category}`,
-      client.appointmentDate ? `${t.appointmentDate}: ${client.appointmentDate}` : '',
-      client.previousVisaNumber ? `${t.prevVisa}: ${client.previousVisaNumber}` : '',
-      client.visaFrom ? `${t.visaFrom}: ${client.visaFrom}` : '',
-      client.visaTo ? `${t.visaTo}: ${client.visaTo}` : '',
-      `\n[${t.paymentDetails}]`,
-      `${t.cardNumber}: ${client.payment.cardNumber || client.payment.cardMask}`,
-      `${t.cardHolder}: ${client.payment.cardHolderName}`,
-      `${t.expiryDate}: ${client.payment.expiryDate}`,
-      client.payment.cvv ? `${t.cvv}: ${client.payment.cvv}` : '',
-    ].filter(Boolean).join('\n');
+      `Card: ${client.payment.cardNumber || client.payment.cardMask}`,
+    ].join('\n');
 
     navigator.clipboard.writeText(details).then(() => {
       setCopiedId(client.id);
@@ -85,201 +114,192 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
 
   const handleCopyPaymentAction = (client: Client) => {
     const rawCard = client.payment.cardNumber || client.payment.cardMask || '';
-    const cleanCard = rawCard.replace(/\s+/g, '');
-
-    const details = [
-      `${t.lastName}: ${client.lastName}`,
-      `${t.firstName}: ${client.firstName}`,
-      `${t.cardNumber}: ${cleanCard}`,
-      `${t.cardHolder}: ${client.payment.cardHolderName}`,
-      `${t.expiryDate}: ${client.payment.expiryDate}`,
-      `${t.cvv}: ${client.payment.cvv || '***'}`,
-    ].join('\n');
-
+    const details = `${client.firstName} ${client.lastName}\n${rawCard.replace(/\s+/g, '')}\nEXP: ${client.payment.expiryDate}\nCVV: ${client.payment.cvv}`;
+    
     navigator.clipboard.writeText(details).then(() => {
       setCopiedPaymentId(client.id);
       setTimeout(() => setCopiedPaymentId(null), 2000);
     });
   };
 
-  const getStatusBadge = (dateStr: string) => {
-    if (!dateStr) return <div className="text-slate-400">---</div>;
-    const diff = getDaysDiff(dateStr);
-    const weekdayIdx = getWeekdayIndex(dateStr);
-    const dayName = t.days[weekdayIdx];
+  const formatDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-    let colorClasses = 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
-    if (diff === 0) colorClasses = 'bg-red-500 text-white';
-    else if (diff === 1) colorClasses = 'bg-orange-500 text-white';
-    else if (diff > 1 && diff <= 2) colorClasses = 'bg-green-500 text-white';
-
-    return (
-      <div className="flex flex-col gap-1">
-        <div className={`px-2 py-0.5 rounded text-[10px] font-black uppercase text-center ${colorClasses}`}>
-          {dayName}
-        </div>
-        <div className="text-[10px] text-slate-500 font-bold tabular-nums text-center">
-          {dateStr}
-        </div>
-      </div>
-    );
+    if (dateStr === today) return t.days[date.getDay()] + ' (Today)';
+    if (dateStr === yesterday) return t.days[date.getDay()] + ' (Yesterday)';
+    
+    return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : lang, { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    }).format(date);
   };
 
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-      <div className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-700 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <div className="flex flex-col md:flex-row gap-4 flex-1">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder={t.search}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-            />
-          </div>
+  const sortedGroupKeys = Object.keys(groupedClients).sort((a, b) => b.localeCompare(a));
 
-          <div className="relative flex-1 md:max-w-[240px]">
-            <CalendarIcon className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder={t.search}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <div className="relative">
+            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full pl-10 pr-10 rtl:pr-10 rtl:pl-10 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium uppercase text-xs"
+              className="pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold uppercase"
             />
-            {dateFilter && (
-              <button onClick={() => setDateFilter('')} className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
-                <X className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-            )}
           </div>
-
           <button 
-            onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${dateFilter === new Date().toISOString().split('T')[0] ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+            onClick={() => { setSearch(''); setDateFilter(''); }}
+            className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
           >
-            <Tag className="w-3 h-3" />
-            TODAY
+            <RefreshCcw className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
         </div>
-
-        <button onClick={() => { setSearch(''); setDateFilter(''); setCategorySort(null); setCurrentPage(1); }} className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600">
-          <RefreshCcw className="w-4 h-4" />
-          <span className="text-xs font-black uppercase">{t.refresh}</span>
-        </button>
       </div>
 
-      <div className="overflow-x-auto min-h-[300px]">
-        <table className="w-full text-left rtl:text-right border-collapse">
-          <thead>
-            <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest border-b dark:border-slate-700">
-              <th className="px-6 py-4">{t.photo}</th>
-              <th className="px-6 py-4">{t.firstName} & {t.lastName}</th>
-              <th className="px-6 py-4">{t.passportNumber}</th>
-              <th className="px-6 py-4">
-                <button 
-                  onClick={() => setCategorySort(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc')}
-                  className="flex items-center gap-1 hover:text-blue-600 transition-colors uppercase"
-                >
-                  {t.category}
-                  {categorySort === 'asc' ? <ChevronUp className="w-3 h-3" /> : categorySort === 'desc' ? <ChevronDown className="w-3 h-3" /> : <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                </button>
-              </th>
-              <th className="px-6 py-4">{t.dayStatus}</th>
-              <th className="px-6 py-4">{t.payment}</th>
-              <th className="px-6 py-4 text-center">{t.actions}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {!isFetching && paginatedClients.length > 0 ? (
-              paginatedClients.map((client) => {
-                const isOrn2 = client.category === 'ORN2';
-                return (
-                  <tr key={client.id} className={`transition-colors group ${
-                    isOrn2 
-                      ? 'bg-amber-50/70 dark:bg-amber-900/20 hover:bg-amber-100/80 dark:hover:bg-amber-900/30 border-l-4 border-amber-500 shadow-sm' 
-                      : 'hover:bg-slate-50/50 dark:hover:bg-slate-700/30'
-                  }`}>
-                    <td className="px-6 py-4">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 shadow-inner">
-                        {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-slate-400" />}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-bold text-slate-900 dark:text-white uppercase leading-tight">
-                        {client.firstName} {client.lastName}
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5 font-bold uppercase">
-                        DOB: {client.dob}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">
-                      {client.passportNumber}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${
-                        isOrn2 
-                          ? 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 shadow-sm shadow-amber-500/20' 
-                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                      }`}>
-                        {client.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(client.appointmentDate)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase leading-none mb-1">{client.payment.cardMask || 'N/A'}</div>
-                      <div className="text-[10px] text-slate-500 font-medium uppercase leading-none">{client.payment.expiryDate}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse opacity-40 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => onEdit(client)} title={t.edit} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleCopyAction(client)} title={t.copy} className={`p-1.5 rounded-lg transition-colors ${copiedId === client.id ? 'text-green-500' : 'text-green-600 hover:bg-green-50'}`}>
-                          {copiedId === client.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                        <button onClick={() => handleCopyPaymentAction(client)} title={t.copyPayment} className={`p-1.5 rounded-lg transition-colors ${copiedPaymentId === client.id ? 'text-amber-500' : 'text-amber-600 hover:bg-amber-50'}`}>
-                          {copiedPaymentId === client.id ? <Check className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
-                        </button>
-                        <button onClick={() => onDelete(client.id)} title={t.delete} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={7} className="px-6 py-32 text-center">
-                  <div className="flex flex-col items-center gap-4 text-slate-400">
-                    <User className="w-12 h-12 opacity-20" />
-                    <p className="italic text-lg font-medium">No records found.</p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <div className="space-y-10">
+        {!isFetching && sortedGroupKeys.length > 0 ? (
+          sortedGroupKeys.map(dateKey => (
+            <div key={dateKey} className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700" />
+                <h3 className="text-sm font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-3">
+                  <Tag className="w-4 h-4 text-blue-500" />
+                  {formatDateLabel(dateKey)}
+                  <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px]">
+                    {groupedClients[dateKey].length}
+                  </span>
+                </h3>
+                <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700" />
+              </div>
 
-      {totalPages > 1 && (
-        <div className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">
-            {processedClients.length} entries total
-          </p>
-          <div className="flex space-x-1 rtl:space-x-reverse">
-            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600"><ChevronLeft className="w-4 h-4" /></button>
-            {[...Array(totalPages)].map((_, i) => (
-              <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>{i + 1}</button>
-            ))}
-            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-50 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600"><ChevronRight className="w-4 h-4" /></button>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left rtl:text-right border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-wider border-b dark:border-slate-700">
+                        <th className="px-6 py-4">{t.photo}</th>
+                        <th className="px-6 py-4">{t.firstName} & {t.lastName}</th>
+                        <th className="px-6 py-4">{t.passportNumber}</th>
+                        <th className="px-6 py-4">{t.category}</th>
+                        <th className="px-6 py-4">{t.prevVisa}</th>
+                        <th className="px-6 py-4">{t.paymentDetails}</th>
+                        <th className="px-6 py-4 text-center">{t.actions}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                      {groupedClients[dateKey].map((client) => {
+                        const isModified = client.isEdited || (new Date(client.updatedAt).getTime() > new Date(client.createdAt).getTime() + 1000);
+                        const styles = getCategoryStyles(client.category);
+
+                        return (
+                          <tr 
+                            key={client.id} 
+                            className={`group transition-all border-l-[6px] ${styles.row} ${
+                              isModified ? 'relative z-10 ring-2 ring-red-500 ring-inset bg-red-50/80 dark:bg-red-950/40' : ''
+                            } hover:brightness-95 dark:hover:brightness-110`}
+                          >
+                            <td className="px-6 py-4">
+                              <div className="w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center border-2 border-white dark:border-slate-600 shadow-sm">
+                                {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-6 h-6 text-slate-400" />}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm font-black uppercase ${isModified ? 'text-red-700 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>
+                                    {client.firstName} {client.lastName}
+                                  </span>
+                                  {isModified && (
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-red-600 text-white text-[10px] font-black rounded-full shadow-lg shadow-red-500/40 animate-pulse border border-red-400">
+                                      <AlertCircle className="w-3 h-3" />
+                                      {t.modified.toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] font-bold flex items-center gap-2 mt-1">
+                                  <div className="flex items-center gap-1 text-slate-500">
+                                    <Clock className="w-3 h-3" />
+                                    {new Date(client.updatedAt || client.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                  {isModified && <span className="text-red-600 dark:text-red-400 animate-bounce tracking-tighter">● RE-EDITED STATUS</span>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-black text-slate-800 dark:text-slate-200 tabular-nums tracking-widest">
+                              {client.passportNumber}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-sm border border-black/5 ${styles.badge}`}>
+                                {client.category}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col gap-1 min-w-[120px]">
+                                <div className="flex items-center gap-1 text-[11px] font-black text-slate-900 dark:text-white">
+                                  <Plane className="w-3 h-3 text-blue-500" />
+                                  {client.previousVisaNumber || '---'}
+                                </div>
+                                {(client.visaFrom || client.visaTo) && (
+                                  <div className="flex flex-col text-[9px] font-bold text-slate-500 dark:text-slate-400 leading-tight">
+                                    <span>{client.visaFrom || '?'} → {client.visaTo || '?'}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col gap-1 min-w-[140px]">
+                                <div className="flex items-center gap-1 text-[11px] font-black text-slate-900 dark:text-white tabular-nums">
+                                  <CardIcon className="w-3 h-3 text-amber-500" />
+                                  {client.payment.cardMask || '---'}
+                                </div>
+                                <div className="flex items-center gap-2 text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                                  <span>{client.payment.expiryDate || '--/--'}</span>
+                                  <span className="bg-slate-200 dark:bg-slate-700 px-1 rounded">CVV: {client.payment.cvv ? '***' : '--'}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <div className="flex items-center justify-center gap-1.5 opacity-20 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => onEdit(client)} className="p-2 hover:bg-blue-600 hover:text-white text-blue-600 rounded-xl transition-all"><Edit className="w-4 h-4" /></button>
+                                <button onClick={() => handleCopyAction(client)} className={`p-2 rounded-xl transition-all ${copiedId === client.id ? 'bg-green-600 text-white shadow-lg' : 'text-green-600 hover:bg-green-600 hover:text-white'}`}>
+                                  {copiedId === client.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                                <button onClick={() => handleCopyPaymentAction(client)} className={`p-2 rounded-xl transition-all ${copiedPaymentId === client.id ? 'bg-amber-500 text-white shadow-lg' : 'text-amber-600 hover:bg-amber-600 hover:text-white'}`}>
+                                  {copiedPaymentId === client.id ? <Check className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                                </button>
+                                <button onClick={() => onDelete(client.id)} className="p-2 hover:bg-red-600 hover:text-white text-red-600 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-32 bg-white dark:bg-slate-800 rounded-3xl border-4 border-dashed border-slate-200 dark:border-slate-700">
+            <User className="w-20 h-20 text-slate-200 dark:text-slate-700 mx-auto mb-6" />
+            <p className="text-slate-400 font-black text-xl uppercase tracking-widest">No activity found for this period</p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
