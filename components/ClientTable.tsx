@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet, X } from 'lucide-react';
 import { Client, Language } from '../types';
 
 interface ClientTableProps {
@@ -27,9 +27,17 @@ const ClientTable: React.FC<ClientTableProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
 
+  // Normalizes dates to YYYY-MM-DD for reliable filtering comparison
   const getActivityDate = (client: Client) => {
     const d = new Date(client.updatedAt || client.createdAt);
     return isNaN(d.getTime()) ? 'Unknown' : d.toISOString().split('T')[0];
+  };
+
+  // Formats date keys to the requested DD/MM/YYYY format for UI headers
+  const formatDisplayDate = (dateStr: string) => {
+    if (dateStr === 'Unknown') return t.uncategorizedHistory;
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
   };
 
   const getCategoryStyles = (category: string) => {
@@ -47,8 +55,14 @@ const ClientTable: React.FC<ClientTableProps> = ({
   const filteredVisibleClients = useMemo(() => {
     const searchTerm = search.toLowerCase();
     return clients.filter(c => {
-      const matchesSearch = !search || c.firstName.toLowerCase().includes(searchTerm) || c.lastName.toLowerCase().includes(searchTerm) || c.passportNumber.toLowerCase().includes(searchTerm);
-      const matchesDate = !dateFilter || getActivityDate(c) === dateFilter;
+      const activityDate = getActivityDate(c);
+      const matchesSearch = !search || 
+        c.firstName.toLowerCase().includes(searchTerm) || 
+        c.lastName.toLowerCase().includes(searchTerm) || 
+        c.passportNumber.toLowerCase().includes(searchTerm);
+      
+      const matchesDate = !dateFilter || activityDate === dateFilter;
+      
       return matchesSearch && matchesDate;
     });
   }, [clients, search, dateFilter]);
@@ -57,10 +71,6 @@ const ClientTable: React.FC<ClientTableProps> = ({
     let list = [...filteredVisibleClients].sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt).getTime();
-      if (isAdmin) {
-        if (a.isModified && !b.isModified) return -1;
-        if (!a.isModified && b.isModified) return 1;
-      }
       return timeB - timeA;
     });
 
@@ -71,7 +81,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
       groups[dateKey].push(client);
     });
     return groups;
-  }, [filteredVisibleClients, isAdmin]);
+  }, [filteredVisibleClients]);
 
   const handleCopyClientDetails = (client: Client) => {
     let raw = `Last Name: ${client.lastName.toUpperCase()}\n`;
@@ -83,8 +93,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
     raw += `Place of Issue: ${client.placeOfIssue.toUpperCase()}\n`;
     raw += `Category: ${client.category}`;
 
-    const hasVisaInfo = client.previousVisaNumber || client.visaFrom || client.visaTo;
-    if (hasVisaInfo) {
+    if (client.previousVisaNumber || client.visaFrom || client.visaTo) {
       raw += `\nPrevious Visa Number: ${client.previousVisaNumber || ''}\n`;
       raw += `Visa Valid From: ${client.visaFrom || ''}\n`;
       raw += `Visa Valid To: ${client.visaTo || ''}`;
@@ -111,19 +120,10 @@ const ClientTable: React.FC<ClientTableProps> = ({
     });
   };
 
-  const formatDateLabel = (dateStr: string) => {
-    if (dateStr === 'Unknown') return t.uncategorizedHistory;
-    const date = new Date(dateStr);
-    const today = new Date().toISOString().split('T')[0];
-    if (dateStr === today) return `${t.days[date.getDay()]} (${t.today})`;
-    const locale = lang === 'ar' ? 'ar-EG' : (lang === 'fr' ? 'fr-FR' : 'en-US');
-    return new Intl.DateTimeFormat(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date);
-  };
-
   const handleToggleSelectAll = () => {
     if (!onSelectAllVisible) return;
     const visibleIds = filteredVisibleClients.map(c => c.id);
-    const allSelected = visibleIds.every(id => selectedClientIds.includes(id));
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedClientIds.includes(id));
     onSelectAllVisible(allSelected ? selectedClientIds.filter(id => !visibleIds.includes(id)) : [...new Set([...selectedClientIds, ...visibleIds])]);
   };
 
@@ -131,7 +131,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Search and Date Filter Bar */}
+      {/* Precision Search and Date Filter Bar */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 flex flex-col md:flex-row gap-5">
         <div className="relative flex-1">
           <Search className="absolute left-4 rtl:left-auto rtl:right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -145,7 +145,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
         </div>
         <div className="flex gap-3">
           <div className="relative min-w-[200px]">
-            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 z-10" />
+            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 z-10 pointer-events-none" />
             <input 
               type="date" 
               value={dateFilter} 
@@ -171,8 +171,8 @@ const ClientTable: React.FC<ClientTableProps> = ({
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
                 <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
                   <Tag className="w-4 h-4 text-indigo-500" />
-                  {formatDateLabel(dateKey)}
-                  <span className="bg-indigo-600 text-white px-3 py-1 rounded-xl text-[10px] shadow-lg">{groupedClients[dateKey].length} {t.files}</span>
+                  {formatDisplayDate(dateKey)}
+                  <span className="bg-indigo-600 text-white px-3 py-1 rounded-xl text-[10px] shadow-lg tracking-normal">{groupedClients[dateKey].length} {t.files}</span>
                 </h3>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
               </div>
@@ -226,8 +226,8 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                           </button>
                                         )}
                                       </div>
-                                      {/* Timestamp under the flag */}
-                                      <div className="text-[7px] font-bold text-red-500/80 mt-0.5 whitespace-nowrap px-1">
+                                      {/* MODIFIED: Timestamp under flag */}
+                                      <div className="text-[7px] font-black text-red-600/90 mt-0.5 whitespace-nowrap px-1 uppercase tracking-tighter">
                                         {new Date(client.updatedAt).toLocaleDateString()} {new Date(client.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                       </div>
                                     </div>
@@ -259,7 +259,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                 <div className="flex items-center gap-2 text-[11px] font-black text-slate-900 dark:text-white">
                                   <CardIcon className="w-4 h-4 text-amber-500" /> {client.payment.cardMask || '---'}
                                 </div>
-                                <div className="text-[9px] font-bold text-slate-400">
+                                <div className="text-[9px] font-bold text-slate-400 uppercase">
                                   EXP: {client.payment.expiryDate || '--'} | CVV: {client.payment.cvv ? '***' : '--'}
                                 </div>
                               </div>
@@ -271,7 +271,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                   <Edit className="w-4 h-4" />
                                 </button>
                                 
-                                {/* Copy Data */}
+                                {/* Copy Client Details Engine */}
                                 <button 
                                   onClick={() => handleCopyClientDetails(client)} 
                                   className={`p-2.5 rounded-xl transition-all shadow-sm ${copiedId === client.id ? 'bg-emerald-600 text-white' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-600 hover:text-white'}`}
@@ -280,7 +280,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                   {copiedId === client.id ? <Check className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                                 </button>
 
-                                {/* Copy Payment */}
+                                {/* Copy Payment Details Engine */}
                                 <button 
                                   onClick={() => handleCopyPaymentDetails(client)} 
                                   className={`p-2.5 rounded-xl transition-all shadow-sm ${copiedPaymentId === client.id ? 'bg-amber-600 text-white' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 hover:bg-amber-600 hover:text-white'}`}
