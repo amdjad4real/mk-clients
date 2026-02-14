@@ -89,6 +89,10 @@ export const TRANSLATIONS = {
     dataEntryNode: 'Data Entry Node Protocol',
     on: 'ON',
     off: 'OFF',
+    rootAdmin: 'Root Administrator',
+    portalVersion: 'Registration Portal v4.2',
+    sessionLive: 'Session Live',
+    wipeAgentDataConfirm: 'DANGER: Delete all records for agent "{email}"? This cannot be undone.',
     days: {
       0: 'Sunday',
       1: 'Monday',
@@ -195,6 +199,10 @@ export const TRANSLATIONS = {
     dataEntryNode: 'Protocole de nœud de saisie',
     on: 'ACTIVÉ',
     off: 'DÉSACTIVÉ',
+    rootAdmin: 'Administrateur Racine',
+    portalVersion: 'Portail d\'enregistrement v4.2',
+    sessionLive: 'Session Active',
+    wipeAgentDataConfirm: 'DANGER : Supprimer tous les enregistrements de l\'agent "{email}" ? Cette action est irréversible.',
     days: {
       0: 'Dimanche',
       1: 'Lundi',
@@ -301,6 +309,10 @@ export const TRANSLATIONS = {
     dataEntryNode: 'بروتوكول عقدة إدخال البيانات',
     on: 'مفعل',
     off: 'معطل',
+    rootAdmin: 'مسؤول النظام',
+    portalVersion: 'بوابة التسجيل v4.2',
+    sessionLive: 'جلسة نشطة',
+    wipeAgentDataConfirm: 'خطر: حذف جميع سجلات الوكيل "{email}"؟ لا يمكن التراجع عن هذه العملية.',
     days: {
       0: 'الأحد',
       1: 'الاثنين',

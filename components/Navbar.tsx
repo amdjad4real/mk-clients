@@ -38,10 +38,10 @@ const Navbar: React.FC<NavbarProps> = ({ lang, setLang, theme, setTheme, t, onLo
               <div className="flex items-center gap-2 mt-1.5">
                 {isAdmin ? (
                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500 text-[10px] font-black rounded-lg uppercase tracking-widest animate-pulse">
-                     <Star className="w-3 h-3 fill-white" /> Root Administrator
+                     <Star className="w-3 h-3 fill-white" /> {t.rootAdmin}
                    </div>
                 ) : (
-                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Registration Portal v4.2</span>
+                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t.portalVersion}</span>
                 )}
               </div>
             </div>
@@ -60,7 +60,7 @@ const Navbar: React.FC<NavbarProps> = ({ lang, setLang, theme, setTheme, t, onLo
                 <User className={`w-6 h-6 ${isAdmin ? 'text-indigo-300' : 'text-blue-600 dark:text-blue-400'}`} />
               </div>
               <div className="flex flex-col">
-                <span className={`text-[10px] font-black uppercase tracking-widest ${isAdmin ? 'text-indigo-400' : 'text-slate-500'}`}>Session Live</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${isAdmin ? 'text-indigo-400' : 'text-slate-500'}`}>{t.sessionLive}</span>
                 <span className={`text-sm font-black uppercase whitespace-nowrap ${isAdmin ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
                   {t.welcome} <span className={isAdmin ? 'text-indigo-300 underline underline-offset-4 decoration-indigo-500/50' : 'text-blue-600 dark:text-blue-400'}>{userName}</span>
                 </span>

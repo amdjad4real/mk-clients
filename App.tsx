@@ -75,7 +75,7 @@ const App: React.FC = () => {
     phoneNumber: dbItem.phone_number,
     dob: dbItem.dob,
     passportNumber: dbItem.passport_number,
-    issueDate: dbItem.issue_date,
+    issue_date: dbItem.issue_date,
     expiryDate: dbItem.expiry_date,
     placeOfIssue: dbItem.place_of_issue,
     previousVisaNumber: dbItem.previous_visa_number,
@@ -88,7 +88,7 @@ const App: React.FC = () => {
     updatedAt: dbItem.updated_at || dbItem.created_at,
     user_id: dbItem.user_id,
     payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '' }
-  });
+  } as any);
 
   const fetchAgents = useCallback(async () => {
     if (!isAdmin) return;
@@ -260,7 +260,8 @@ const App: React.FC = () => {
   };
 
   const handleDeleteAgentData = async (userId: string, email: string) => {
-    if (!window.confirm(`DANGER: Delete all records for agent "${email}"? This cannot be undone.`)) return;
+    const confirmMsg = TRANSLATIONS[lang].wipeAgentDataConfirm.replace('{email}', email);
+    if (!window.confirm(confirmMsg)) return;
     try {
       const { error } = await supabase.from('clients').delete().eq('user_id', userId);
       if (error) throw error;
