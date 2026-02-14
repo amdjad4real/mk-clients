@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Language, Theme, Client, ClientFormData } from './types.ts';
-import { TRANSLATIONS } from './constants.tsx';
-import Navbar from './components/Navbar.tsx';
-import ClientForm from './components/ClientForm.tsx';
-import ClientTable from './components/ClientTable.tsx';
-import Auth from './components/Auth.tsx';
-import { maskCard } from './utils/helpers.ts';
-import { supabase } from './lib/supabase.ts';
+import { Language, Theme, Client, ClientFormData } from './types';
+import { TRANSLATIONS } from './constants';
+import Navbar from './components/Navbar';
+import ClientForm from './components/ClientForm';
+import ClientTable from './components/ClientTable';
+import Auth from './components/Auth';
+import { maskCard } from './utils/helpers';
+import { supabase } from './lib/supabase';
 import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw } from 'lucide-react';
 
 interface Agent {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
@@ -166,11 +167,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       const newFormData = { ...formData };
 
       // Case 1: Tab/Space separated format (e.g., HAMADI ABDELKRIM 1997-01-16 ...)
-      // Split by tab (\t) or 2+ spaces (\s{2,})
       const parts = text.split(/\t|\s{2,}/).map(p => p.trim()).filter(Boolean);
       
       if (parts.length >= 7 && !text.includes(':')) {
-        // Split Full Name: First part = Last Name, rest = First Name
         const nameParts = parts[0].split(/\s+/);
         newFormData.lastName = (nameParts[0] || '').toUpperCase();
         newFormData.firstName = (nameParts.slice(1).join(' ') || '').toUpperCase();
@@ -186,7 +185,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           newFormData.category = cat;
         }
 
-        // Optional visa details
         if (parts.length >= 8) newFormData.previousVisaNumber = parts[7];
         if (parts.length >= 9) newFormData.visaFrom = normalizeToDashDate(parts[8]);
         if (parts.length >= 10) newFormData.visaTo = normalizeToDashDate(parts[9]);
@@ -295,8 +293,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     if (validate()) {
       setIsSubmitting(true);
       try {
-        // Submission data is already capitalized by App.tsx mapToDB, 
-        // but we'll ensure it here too for the onSubmit callback.
         const capitalizedData: ClientFormData = {
           ...formData,
           lastName: formData.lastName.toUpperCase(),

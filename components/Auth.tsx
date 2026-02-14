@@ -58,7 +58,7 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors p-4">
       <div className="max-w-5xl w-full bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200 dark:border-slate-700 min-h-[600px]">
         
-        {/* Branding Side - Stays Blue for Brand Identity */}
+        {/* Branding Side */}
         <div className="md:w-1/2 bg-blue-600 p-10 text-white flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-400/20 rounded-full -ml-32 -mb-32 blur-3xl"></div>
@@ -81,7 +81,6 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
                 </p>
               </div>
 
-              {/* LOGO PLACEMENT */}
               <div className="mt-8 flex justify-start">
                 <div className="bg-white p-2 rounded-2xl shadow-2xl hover:scale-105 transition-transform duration-300">
                   <img 
@@ -113,10 +112,9 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
           </div>
         </div>
 
-        {/* Form Side - Respects Theme */}
+        {/* Form Side */}
         <div className="md:w-1/2 p-8 md:p-12 bg-white dark:bg-slate-800 flex flex-col justify-center">
           <div className="flex justify-end gap-3 mb-8">
-            {/* Theme Toggle in Login */}
             <button
               onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
               className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-yellow-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all border border-slate-200 dark:border-slate-600"
@@ -125,7 +123,6 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
 
-            {/* Language Selector */}
             <div className="relative group">
               <Globe className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors" />
               <select
