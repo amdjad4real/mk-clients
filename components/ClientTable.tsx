@@ -83,10 +83,11 @@ const ClientTable: React.FC<ClientTableProps> = ({
     raw += `Place of Issue: ${client.placeOfIssue.toUpperCase()}\n`;
     raw += `Category: ${client.category}`;
 
-    if (client.previousVisaNumber || client.visaFrom || client.visaTo) {
-      raw += `\nPrevious Visa Number: ${client.previousVisaNumber || 'N/A'}\n`;
-      raw += `Visa Valid From: ${client.visaFrom || 'N/A'}\n`;
-      raw += `Visa Valid To: ${client.visaTo || 'N/A'}`;
+    const hasVisaInfo = client.previousVisaNumber || client.visaFrom || client.visaTo;
+    if (hasVisaInfo) {
+      raw += `\nPrevious Visa Number: ${client.previousVisaNumber || ''}\n`;
+      raw += `Visa Valid From: ${client.visaFrom || ''}\n`;
+      raw += `Visa Valid To: ${client.visaTo || ''}`;
     }
 
     navigator.clipboard.writeText(raw).then(() => {
@@ -99,10 +100,10 @@ const ClientTable: React.FC<ClientTableProps> = ({
     const payment = client.payment;
     let raw = `Last Name: ${client.lastName.toUpperCase()}\n`;
     raw += `First Name: ${client.firstName.toUpperCase()}\n`;
-    raw += `Card Number: ${payment.cardNumber}\n`;
-    raw += `Card Holder Name: ${payment.cardHolderName.toUpperCase()}\n`;
-    raw += `Expiry Date: ${payment.expiryDate}\n`;
-    raw += `CVV: ${payment.cvv}`;
+    raw += `Card Number: ${payment.cardNumber || ''}\n`;
+    raw += `Card Holder Name: ${(payment.cardHolderName || '').toUpperCase()}\n`;
+    raw += `Expiry Date: ${payment.expiryDate || ''}\n`;
+    raw += `CVV: ${payment.cvv || ''}`;
 
     navigator.clipboard.writeText(raw).then(() => {
       setCopiedPaymentId(client.id);
@@ -143,19 +144,19 @@ const ClientTable: React.FC<ClientTableProps> = ({
           />
         </div>
         <div className="flex gap-3">
-          <div className="relative group min-w-[180px]">
+          <div className="relative min-w-[200px]">
             <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 z-10" />
             <input 
               type="date" 
               value={dateFilter} 
               onChange={(e) => setDateFilter(e.target.value)} 
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-blue-100 dark:border-slate-700 bg-blue-50/30 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 outline-none text-[10px] font-black uppercase tracking-widest relative z-0 transition-all hover:border-blue-300" 
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-blue-100 dark:border-slate-700 bg-blue-50/30 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 outline-none font-black transition-all hover:border-blue-300" 
             />
           </div>
           <button 
             onClick={() => { setSearch(''); setDateFilter(''); }} 
             className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-all active:scale-95 shadow-sm"
-            title={t.refresh}
+            title={t.clearFilters}
           >
             <RefreshCcw className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
@@ -182,6 +183,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                       <tr className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] border-b dark:border-slate-700/50">
                         <th className="px-6 py-5 text-center w-12">
                           <button onClick={handleToggleSelectAll} className="hover:text-indigo-500 transition-colors">
+                            {/* Fixed: Access property c.id inside the every callback instead of undefined id */}
                             {filteredVisibleClients.length > 0 && filteredVisibleClients.every(c => selectedClientIds.includes(c.id)) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                           </button>
                         </th>
@@ -260,7 +262,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                               </div>
                             </td>
                             <td className="px-6 py-5">
-                              <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                              <div className="flex items-center justify-center gap-2 opacity-100 transition-all">
                                 {/* Edit */}
                                 <button onClick={() => onEdit(client)} className="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm" title={t.edit}>
                                   <Edit className="w-4 h-4" />

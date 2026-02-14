@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Language, Theme, Client, ClientFormData } from './types';
 import { TRANSLATIONS } from './constants';
 import Navbar from './components/Navbar';
@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [isBulkMode, setIsBulkMode] = useState(false);
 
+  const initialFetchDone = useRef(false);
   const isAdmin = useMemo(() => session?.user?.email === 'admin@mkservice.com', [session]);
 
   useEffect(() => {
@@ -52,9 +53,6 @@ const App: React.FC = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session && session.user?.email !== 'admin@mkservice.com') {
-        setIsFormOpen(true);
-      }
     });
 
     return () => subscription.unsubscribe();
@@ -110,8 +108,12 @@ const App: React.FC = () => {
     }
   }, [isAdmin]);
 
-  const fetchClients = useCallback(async () => {
+  const fetchClients = useCallback(async (isManual = false) => {
     if (!session?.user) return;
+    
+    // If not a manual refresh and we already fetched once, skip to avoid "refreshing on tab leave"
+    if (!isManual && initialFetchDone.current) return;
+
     setIsFetchingClients(true);
     try {
       let query = supabase.from('clients').select('*');
@@ -121,6 +123,7 @@ const App: React.FC = () => {
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
       setClients((data || []).map(mapFromDB));
+      initialFetchDone.current = true;
     } catch (err) {
       console.error('Error fetching clients:', err);
     } finally {
@@ -130,7 +133,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (session?.user) {
-      fetchClients();
+      fetchClients(false);
       if (isAdmin) fetchAgents();
     }
   }, [session, fetchClients, fetchAgents, isAdmin]);
@@ -149,6 +152,7 @@ const App: React.FC = () => {
   }, [clients, selectedUserIds, isAdmin]);
 
   const handleLogout = async () => {
+    initialFetchDone.current = false;
     await supabase.auth.signOut();
   };
 
@@ -211,7 +215,7 @@ const App: React.FC = () => {
         category: formData.category,
         appointment_date: formData.appointmentDate,
         photo_url: formData.photoUrl,
-        is_modified: true, // Flag as modified for admin review
+        is_modified: true, 
         updated_at: new Date().toISOString(),
         payment: {
           cardMask: formData.payment.cardNumber ? maskCard(formData.payment.cardNumber) : 'N/A',
@@ -316,7 +320,7 @@ const App: React.FC = () => {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                       <UserCheck className="w-3.5 h-3.5" /> {agents.length} {t.nodesSynchronized}
                     </p>
-                    <button onClick={fetchClients} className="flex items-center gap-1 text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-600 transition-colors">
+                    <button onClick={() => fetchClients(true)} className="flex items-center gap-1 text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-600 transition-colors">
                       <RefreshCw className={`w-3 h-3 ${isFetchingClients ? 'animate-spin' : ''}`} /> {t.forceSync}
                     </button>
                   </div>
@@ -365,7 +369,17 @@ const App: React.FC = () => {
 
         <section className="space-y-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 px-3">
-            <div className="flex items-center gap-5"><h2 className="text-4xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">{t.registeredClients}</h2>{isFetchingClients && <div className="w-7 h-7 border-[5px] border-indigo-600 border-t-transparent rounded-full animate-spin"></div>}</div>
+            <div className="flex items-center gap-5">
+                <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">{t.registeredClients}</h2>
+                {isFetchingClients && <div className="w-7 h-7 border-[5px] border-indigo-600 border-t-transparent rounded-full animate-spin"></div>}
+                <button 
+                  onClick={() => fetchClients(true)} 
+                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600 transition-all shadow-sm border border-slate-200 dark:border-slate-700"
+                  title={t.refresh}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isFetchingClients ? 'animate-spin' : ''}`} />
+                </button>
+            </div>
             {isAdmin && selectedUserIds.length > 0 && <div className="flex items-center gap-4 bg-indigo-600 text-white px-8 py-3 rounded-2xl text-[11px] font-black uppercase shadow-2xl border border-indigo-400 animate-in slide-in-from-right duration-500"><Filter className="w-5 h-5" />{t.aggregatedView}: {selectedUserIds.length} {t.nodesSelected}</div>}
           </div>
           <ClientTable 
