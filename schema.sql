@@ -31,6 +31,9 @@ BEGIN
   END IF;
 END $$;
 
+-- Force PostgREST to reload the schema cache
+NOTIFY pgrst, 'reload schema';
+
 -- Enable RLS
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 

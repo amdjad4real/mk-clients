@@ -8,7 +8,7 @@ import ClientTable from './components/ClientTable';
 import Auth from './components/Auth';
 import { maskCard } from './utils/helpers';
 import { supabase } from './lib/supabase';
-import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X, ShieldCheck } from 'lucide-react';
+import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X } from 'lucide-react';
 
 interface Agent {
   id: string;
@@ -211,7 +211,7 @@ const App: React.FC = () => {
         category: formData.category,
         appointment_date: formData.appointmentDate,
         photo_url: formData.photoUrl,
-        is_modified: true, // Mark as modified for admin review
+        is_modified: true, // Flag as modified for admin review
         updated_at: new Date().toISOString(),
         payment: {
           cardMask: formData.payment.cardNumber ? maskCard(formData.payment.cardNumber) : 'N/A',

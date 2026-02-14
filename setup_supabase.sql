@@ -2,7 +2,18 @@
 -- Enable RLS
 ALTER TABLE IF EXISTS clients ENABLE ROW LEVEL SECURITY;
 
--- Clients Table
+-- 1. Ensure the column exists with the correct type and default
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='is_modified') THEN
+    ALTER TABLE clients ADD COLUMN is_modified BOOLEAN DEFAULT FALSE;
+  END IF;
+END $$;
+
+-- 2. Update existing rows if they are null
+UPDATE clients SET is_modified = FALSE WHERE is_modified IS NULL;
+
+-- 3. Clients Table Structure Check (for fresh setups)
 CREATE TABLE IF NOT EXISTS clients (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -20,19 +31,15 @@ CREATE TABLE IF NOT EXISTS clients (
   category TEXT NOT NULL,
   appointment_date DATE,
   photo_url TEXT,
-  is_modified BOOLEAN DEFAULT FALSE, -- Flag for admin review
+  is_modified BOOLEAN DEFAULT FALSE,
   payment JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Crucial: Ensure the column exists if the table was created previously
-DO $$ 
-BEGIN 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='is_modified') THEN
-    ALTER TABLE clients ADD COLUMN is_modified BOOLEAN DEFAULT FALSE;
-  END IF;
-END $$;
+-- 4. Force PostgREST to reload the schema cache
+-- Run this to fix the "Could not find column" error
+NOTIFY pgrst, 'reload schema';
 
 -- Policies for Data Isolation
 DROP POLICY IF EXISTS "Select isolation" ON clients;
