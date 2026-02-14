@@ -75,7 +75,7 @@ const App: React.FC = () => {
     phoneNumber: dbItem.phone_number,
     dob: dbItem.dob,
     passportNumber: dbItem.passport_number,
-    issue_date: dbItem.issue_date,
+    issueDate: dbItem.issue_date,
     expiryDate: dbItem.expiry_date,
     placeOfIssue: dbItem.place_of_issue,
     previousVisaNumber: dbItem.previous_visa_number,
@@ -88,7 +88,7 @@ const App: React.FC = () => {
     updatedAt: dbItem.updated_at || dbItem.created_at,
     user_id: dbItem.user_id,
     payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '' }
-  } as any);
+  });
 
   const fetchAgents = useCallback(async () => {
     if (!isAdmin) return;
@@ -171,6 +171,7 @@ const App: React.FC = () => {
   };
 
   const handleRegisterClient = async (formData: ClientFormData) => {
+    const t = TRANSLATIONS[lang];
     if (!session?.user) return;
     try {
       const payload = {
@@ -204,12 +205,13 @@ const App: React.FC = () => {
         setIsFormOpen(false);
       }
     } catch (err: any) {
-      alert('Registration failed: ' + err.message);
+      alert(`${t.registrationFailed}: ${err.message}`);
       throw err;
     }
   };
 
   const handleUpdateClient = async (id: string, formData: ClientFormData) => {
+    const t = TRANSLATIONS[lang];
     if (!session?.user) return;
     try {
       const payload = {
@@ -243,7 +245,7 @@ const App: React.FC = () => {
       }
       setEditingClient(null);
     } catch (err: any) {
-      alert('Update failed: ' + err.message);
+      alert(`${t.updateFailed}: ${err.message}`);
       throw err;
     }
   };

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, AlertCircle, Clock, Plane, CreditCard as CardIcon, Database } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database } from 'lucide-react';
 import { Client, Language } from '../types';
 
 interface ClientTableProps {
@@ -109,13 +109,15 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
   };
 
   const formatDateLabel = (dateStr: string) => {
-    if (dateStr === 'Unknown') return 'Uncategorized History';
+    if (dateStr === 'Unknown') return t.uncategorizedHistory;
     const date = new Date(dateStr);
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    if (dateStr === today) return t.days[date.getDay()] + (lang === 'ar' ? ' (اليوم)' : (lang === 'fr' ? ' (Aujourd\'hui)' : ' (Today)'));
-    if (dateStr === yesterday) return t.days[date.getDay()] + (lang === 'ar' ? ' (أمس)' : (lang === 'fr' ? ' (Hier)' : ' (Yesterday)'));
-    return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : (lang === 'fr' ? 'fr-FR' : 'en-US'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date);
+    if (dateStr === today) return `${t.days[date.getDay()]} (${t.today})`;
+    if (dateStr === yesterday) return `${t.days[date.getDay()]} (${t.yesterday})`;
+    
+    const locale = lang === 'ar' ? 'ar-EG' : (lang === 'fr' ? 'fr-FR' : 'en-US');
+    return new Intl.DateTimeFormat(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date);
   };
 
   const sortedGroupKeys = Object.keys(groupedClients).sort((a, b) => b.localeCompare(a));
@@ -163,7 +165,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                   <Tag className="w-4 h-4 text-indigo-500" />
                   {formatDateLabel(dateKey)}
                   <span className="bg-indigo-600 text-white px-3 py-1 rounded-xl text-[10px] shadow-lg shadow-indigo-500/20">
-                    {groupedClients[dateKey].length} {lang === 'ar' ? 'ملفات' : (lang === 'fr' ? 'DOSSIERS' : 'FILES')}
+                    {groupedClients[dateKey].length} {t.files}
                   </span>
                 </h3>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
@@ -178,9 +180,9 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                         <th className="px-8 py-5">{t.lastName} & {t.firstName}</th>
                         <th className="px-8 py-5">{t.passportNumber}</th>
                         <th className="px-8 py-5">{t.category}</th>
-                        <th className="px-8 py-5">{lang === 'ar' ? 'الخدمات اللوجستية' : (lang === 'fr' ? 'Logistique' : 'Logistics')}</th>
+                        <th className="px-8 py-5">{t.logistics}</th>
                         <th className="px-8 py-5">{t.payment}</th>
-                        <th className="px-8 py-5 text-center">{lang === 'ar' ? 'البروتوكول' : (lang === 'fr' ? 'Protocole' : 'Protocol')}</th>
+                        <th className="px-8 py-5 text-center">{t.protocol}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
@@ -201,7 +203,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                                     {client.firstName} {client.lastName}
                                   </span>
                                   {isModified && (
-                                    <div className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black rounded uppercase tracking-tighter animate-pulse">{lang === 'ar' ? 'محدث' : (lang === 'fr' ? 'Mis à jour' : 'Updated')}</div>
+                                    <div className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black rounded uppercase tracking-tighter animate-pulse">{t.updated}</div>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 mt-1">
@@ -219,7 +221,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, t, lang, onEdit, onD
                                   <Plane className="w-4 h-4 text-blue-500" /> {client.previousVisaNumber || '---'}
                                 </div>
                                 <div className="text-[9px] font-bold text-slate-400 tracking-wider">
-                                  {client.visaFrom || '---'} > {client.visaTo || '---'}
+                                  {client.visaFrom || '---'} &rarr; {client.visaTo || '---'}
                                 </div>
                               </div>
                             </td>

@@ -44,7 +44,7 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
         } else {
           const { error } = await supabase.auth.signUp({ email, password });
           if (error) throw error;
-          alert('Check your email for confirmation link!');
+          alert(t.checkEmail);
         }
       } catch (err: any) {
         setAuthError(err.message || 'Authentication failed');
