@@ -27,10 +27,14 @@ const ClientTable: React.FC<ClientTableProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
 
-  // Normalizes dates to YYYY-MM-DD for reliable filtering comparison
+  // Normalizes dates to YYYY-MM-DD for reliable filtering comparison using local time
   const getActivityDate = (client: Client) => {
     const d = new Date(client.updatedAt || client.createdAt);
-    return isNaN(d.getTime()) ? 'Unknown' : d.toISOString().split('T')[0];
+    if (isNaN(d.getTime())) return 'Unknown';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Formats date keys to the requested DD/MM/YYYY format for UI headers
@@ -93,7 +97,8 @@ const ClientTable: React.FC<ClientTableProps> = ({
     raw += `Place of Issue: ${client.placeOfIssue.toUpperCase()}\n`;
     raw += `Category: ${client.category}`;
 
-    if (client.previousVisaNumber || client.visaFrom || client.visaTo) {
+    const hasVisaInfo = client.previousVisaNumber || client.visaFrom || client.visaTo;
+    if (hasVisaInfo) {
       raw += `\nPrevious Visa Number: ${client.previousVisaNumber || ''}\n`;
       raw += `Visa Valid From: ${client.visaFrom || ''}\n`;
       raw += `Visa Valid To: ${client.visaTo || ''}`;
@@ -226,7 +231,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                           </button>
                                         )}
                                       </div>
-                                      {/* MODIFIED: Timestamp under flag */}
+                                      {/* Timestamp under the flag for modified clients */}
                                       <div className="text-[7px] font-black text-red-600/90 mt-0.5 whitespace-nowrap px-1 uppercase tracking-tighter">
                                         {new Date(client.updatedAt).toLocaleDateString()} {new Date(client.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                       </div>
