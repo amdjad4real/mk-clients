@@ -82,7 +82,7 @@ const App: React.FC = () => {
   });
 
   const mapFromDB = (dbItem: any): Client => {
-    const payment = dbItem.payment || {};
+    const p = dbItem.payment || {};
     return {
       id: dbItem.id,
       lastName: String(dbItem.last_name || dbItem.lastName || '').trim().toUpperCase(),
@@ -99,14 +99,14 @@ const App: React.FC = () => {
       category: String(dbItem.category || '').toUpperCase(),
       appointmentDate: dbItem.appointment_date || dbItem.appointmentDate || '',
       photoUrl: dbItem.photo_url || dbItem.photoUrl || '',
-      createdAt: dbItem.created_at,
-      updatedAt: dbItem.updated_at || dbItem.created_at,
+      createdAt: dbItem.created_at || dbItem.createdAt || new Date().toISOString(),
+      updatedAt: dbItem.updated_at || dbItem.updatedAt || dbItem.created_at || new Date().toISOString(),
       payment: {
-        cardMask: payment.cardMask || 'N/A',
-        expiryDate: payment.expiryDate || 'N/A',
-        cardHolderName: String(payment.cardHolderName || 'N/A').trim().toUpperCase(),
-        cardNumber: payment.cardNumber || '', 
-        cvv: payment.cvv || ''
+        cardMask: p.cardMask || 'N/A',
+        expiryDate: p.expiryDate || 'N/A',
+        cardHolderName: String(p.cardHolderName || 'N/A').trim().toUpperCase(),
+        cardNumber: p.cardNumber || '', 
+        cvv: p.cvv || ''
       }
     };
   };
@@ -115,15 +115,22 @@ const App: React.FC = () => {
     if (!session?.user) return;
     setIsFetchingClients(true);
     try {
+      console.log('Fetching clients from Supabase...');
       const { data, error } = await supabase
         .from('clients')
         .select('*')
         .order('updated_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase Query Error:', error);
+        throw error;
+      }
+      
+      console.log(`Fetched ${data?.length || 0} clients.`);
       setClients((data || []).map(mapFromDB));
-    } catch (err) {
-      console.error('Error fetching clients:', err);
+    } catch (err: any) {
+      console.error('Error in fetchClients:', err);
+      // Optional: alert('Failed to fetch clients: ' + err.message);
     } finally {
       setIsFetchingClients(false);
     }
@@ -251,6 +258,11 @@ const App: React.FC = () => {
           <div className="flex items-center space-x-2 rtl:space-x-reverse mb-6">
             <h2 className="text-2xl font-bold">{t.registeredClients}</h2>
             {isFetchingClients && <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>}
+            {!isFetchingClients && (
+                <button onClick={fetchClients} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400" title="Refresh list">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+            )}
           </div>
           <ClientTable 
             clients={clients} 
