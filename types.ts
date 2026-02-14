@@ -21,6 +21,7 @@ export interface Client {
   createdAt: string; // ISO timestamp from DB
   updatedAt: string; // ISO timestamp for modifications
   isEdited?: boolean; // UI-only flag for session persistence
+  user_id?: string; // Ownership field
   payment: {
     cardMask: string;
     expiryDate: string;
