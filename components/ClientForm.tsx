@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, CreditCard, User, ClipboardPaste, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, CreditCard, User, ClipboardPaste, ScanLine, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
 import { CATEGORIES } from '../constants';
 import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate } from '../utils/helpers';
@@ -90,6 +90,54 @@ const CalendarPicker: React.FC<{
       </div>
     </div>
   );
+};
+
+const parseOcrText = (text: string): Partial<ClientFormData> => {
+  const result: Partial<ClientFormData> = {};
+
+  const normalizeKey = (k: string): string =>
+    k.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\(.*?\)/g, ' ')
+      .replace(/[^a-z\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const upper = (v: string) => v.toUpperCase();
+  const digits9 = (v: string) => v.replace(/\D/g, '').substring(0, 9);
+  const date = (v: string) => normalizeToDashDate(v);
+
+  type Mapper = { test: (n: string) => boolean; field: keyof ClientFormData; transform?: (v: string) => string };
+  const keyMap: Mapper[] = [
+    { test: n => n === 'nom' || n.startsWith('nom ') || n.startsWith('surname') || n.includes('nom de famille'), field: 'lastName', transform: upper },
+    { test: n => n === 'prenoms' || n === 'prenom' || n.startsWith('prenoms ') || n.startsWith('prenom ') || n.startsWith('given'), field: 'firstName', transform: upper },
+    { test: n => n.includes('naissance') || n === 'dob' || n.includes('date of birth'), field: 'dob', transform: date },
+    { test: n => n.includes('passeport') || n.includes('passport'), field: 'passportNumber', transform: digits9 },
+    { test: n => n.includes('delivrance') || n.includes('date of issue') || (n.includes('issue') && n.includes('date')), field: 'issueDate', transform: date },
+    { test: n => (n.includes('expir') && !n.includes('valide')) || n.includes('expiry'), field: 'expiryDate', transform: date },
+    { test: n => n === 'place' || n.startsWith('place of') || n === 'lieu' || n.includes('lieu de'), field: 'placeOfIssue', transform: upper },
+    { test: n => n.includes('numero de visa') || n.includes('numero visa') || (n.includes('numero') && n.includes('visa')), field: 'previousVisaNumber' },
+    { test: n => n.includes('valide du') || n.includes('visa from') || n.includes('visa valid from'), field: 'visaFrom', transform: date },
+    { test: n => n.includes('valide au') || n.includes('visa to') || n.includes('visa valid to') || n.includes('visa valid until'), field: 'visaTo', transform: date },
+  ];
+
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) continue;
+    const key = line.substring(0, colonIdx).trim();
+    const value = line.substring(colonIdx + 1).replace(/[\u{1F4CB}\u{1F4CC}]/gu, '').trim();
+    if (!key || !value) continue;
+    const normalized = normalizeKey(key);
+    for (const { test, field, transform } of keyMap) {
+      if (test(normalized)) {
+        (result as any)[field] = transform ? transform(value) : value;
+        break;
+      }
+    }
+  }
+
+  return result;
 };
 
 const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData, onCancel }) => {
@@ -236,6 +284,22 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       setErrors({});
     } catch (err) {
       console.error('Failed to read clipboard', err);
+    }
+  };
+
+  const handleOcrPaste = async () => {
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) return;
+      const ocrData = parseOcrText(text);
+      if (Object.keys(ocrData).length === 0) {
+        console.warn('OCR paste: no fields matched');
+        return;
+      }
+      setFormData(prev => ({ ...prev, ...ocrData }));
+      setErrors({});
+    } catch (err) {
+      console.error('Failed to read clipboard for OCR', err);
     }
   };
 
@@ -441,15 +505,27 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
       <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t.addNewClient}</span>
-        <button
-          type="button"
-          onClick={handlePaste}
-          disabled={isSubmitting}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-black hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all border border-blue-100 dark:border-blue-800 disabled:opacity-50"
-        >
-          <ClipboardPaste className="w-3.5 h-3.5" />
-          {t.paste}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleOcrPaste}
+            disabled={isSubmitting}
+            title="Paste scanned passport data (Nom, Prénoms, Date de naissance, etc.)"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-black hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all border border-emerald-100 dark:border-emerald-800 disabled:opacity-50"
+          >
+            <ScanLine className="w-3.5 h-3.5" />
+            {t.pasteOcr}
+          </button>
+          <button
+            type="button"
+            onClick={handlePaste}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-black hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all border border-blue-100 dark:border-blue-800 disabled:opacity-50"
+          >
+            <ClipboardPaste className="w-3.5 h-3.5" />
+            {t.paste}
+          </button>
+        </div>
       </div>
       <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
         <div className="space-y-6">
