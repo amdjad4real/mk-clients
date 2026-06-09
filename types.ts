@@ -20,6 +20,7 @@ export interface Client {
   photoUrl?: string;
   createdAt: string; // ISO timestamp from DB
   updatedAt: string; // ISO timestamp for modifications
+  deletedAt?: string | null; // Soft-delete timestamp
   isModified?: boolean; // Flag for admin review
   user_id?: string; // Ownership field
   payment: {

@@ -88,6 +88,7 @@ const App: React.FC = () => {
     photoUrl: dbItem.photo_url,
     createdAt: dbItem.created_at,
     updatedAt: dbItem.updated_at || dbItem.created_at,
+    deletedAt: dbItem.deleted_at,
     isModified: !!dbItem.is_modified,
     user_id: dbItem.user_id,
     issueDate: dbItem.issue_date,
@@ -116,7 +117,7 @@ const App: React.FC = () => {
 
     setIsFetchingClients(true);
     try {
-      let query = supabase.from('clients').select('*');
+      let query = supabase.from('clients').select('*').is('deleted_at', null);
       if (!isAdmin) {
         query = query.eq('user_id', session.user.id);
       }
@@ -252,7 +253,7 @@ const App: React.FC = () => {
   const handleDeleteClient = async (id: string) => {
     if (!window.confirm(TRANSLATIONS[lang].confirmDelete)) return;
     try {
-      const { error } = await supabase.from('clients').delete().eq('id', id);
+      const { error } = await supabase.from('clients').update({ deleted_at: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
       setClients(prev => prev.filter(c => c.id !== id));
       setSelectedClientIds(prev => prev.filter(cid => cid !== id));
@@ -266,7 +267,7 @@ const App: React.FC = () => {
     const count = selectedClientIds.length;
     if (!window.confirm(TRANSLATIONS[lang].confirmBulkDelete.replace('{count}', count.toString()))) return;
     try {
-      const { error } = await supabase.from('clients').delete().in('id', selectedClientIds);
+      const { error } = await supabase.from('clients').update({ deleted_at: new Date().toISOString() }).in('id', selectedClientIds);
       if (error) throw error;
       setClients(prev => prev.filter(c => !selectedClientIds.includes(c.id)));
       setSelectedClientIds([]);
