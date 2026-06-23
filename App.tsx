@@ -112,13 +112,20 @@ const App: React.FC = () => {
 
     setIsFetchingClients(true);
     try {
-      let q = fireQuery(collection(db, 'clients'), orderBy('created_at', 'desc'));
-      if (!isAdmin) {
-        q = fireQuery(collection(db, 'clients'), where('user_id', '==', session.user.uid), orderBy('created_at', 'desc'));
+      let q;
+      if (isAdmin) {
+        q = fireQuery(collection(db, 'clients'));
+      } else {
+        q = fireQuery(collection(db, 'clients'), where('user_id', '==', session.user.uid));
       }
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setClients((data || []).map(mapFromDB));
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() as Record<string, any> }));
+      const sorted = (data as any[]).sort((a, b) => {
+        const dateA = a.created_at || '';
+        const dateB = b.created_at || '';
+        return dateB.localeCompare(dateA);
+      });
+      setClients(sorted.map(mapFromDB));
       initialFetchDone.current = true;
     } catch (err) {
       console.error('Error fetching clients:', err);
