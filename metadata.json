@@ -1,0 +1,5 @@
+{
+  "name": "BLS Client Registration System",
+  "description": "A secure, multilingual admin dashboard for visa client registration featuring advanced form validation, dark mode, RTL support, and encrypted payment handling simulations.",
+  "requestFramePermissions": []
+}
