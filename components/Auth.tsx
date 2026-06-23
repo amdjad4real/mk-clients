@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Mail, Lock, ArrowRight, ArrowLeft, Loader2, Sun, Moon, AlertCircle } from 'lucide-react';
 import { Language, Theme } from '../types';
-import { supabase } from '../lib/supabase';
+import { auth } from '../lib/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
 interface AuthProps {
   lang: Language;
@@ -39,11 +40,9 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
       setIsLoading(true);
       try {
         if (isLogin) {
-          const { error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) throw error;
+          await signInWithEmailAndPassword(auth, email, password);
         } else {
-          const { error } = await supabase.auth.signUp({ email, password });
-          if (error) throw error;
+          await createUserWithEmailAndPassword(auth, email, password);
           alert(t.checkEmail);
         }
       } catch (err: any) {

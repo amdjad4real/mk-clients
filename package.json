@@ -10,7 +10,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.45.4",
+    "firebase": "^11.2.0",
     "@tailwindcss/vite": "^4.2.2",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",

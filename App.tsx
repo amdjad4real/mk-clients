@@ -7,7 +7,9 @@ import ClientForm from './components/ClientForm';
 import ClientTable from './components/ClientTable';
 import Auth from './components/Auth';
 import { maskCard } from './utils/helpers';
-import { supabase } from './lib/supabase';
+import { auth, db } from './lib/firebase';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X, ShieldCheck, UserPlus, Database, User, Pencil } from 'lucide-react';
 
 interface Agent {
@@ -26,7 +28,7 @@ const App: React.FC = () => {
     return (stored === 'light' || stored === 'dark') ? stored as Theme : 'light';
   });
 
-  const [session, setSession] = useState<any>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -40,22 +42,17 @@ const App: React.FC = () => {
   const [isBulkMode, setIsBulkMode] = useState(false);
 
   const initialFetchDone = useRef(false);
-  const isAdmin = useMemo(() => session?.user?.email === 'admin@mkservice.com', [session]);
+  const isAdmin = useMemo(() => user?.email === 'admin@mkservice.com', [user]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session && session.user?.email !== 'admin@mkservice.com') {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser && firebaseUser.email !== 'admin@mkservice.com') {
         setIsFormOpen(true);
       }
       setIsLoadingSession(false);
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -73,70 +70,45 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const mapFromDB = (dbItem: any): Client => ({
-    id: dbItem.id,
-    lastName: dbItem.last_name,
-    firstName: dbItem.first_name,
-    phoneNumber: dbItem.phone_number,
-    dob: dbItem.dob,
-    passportNumber: dbItem.passport_number,
-    previousVisaNumber: dbItem.previous_visa_number,
-    visaFrom: dbItem.visa_from,
-    visaTo: dbItem.visa_to,
-    category: dbItem.category,
-    appointmentDate: dbItem.appointment_date,
-    photoUrl1: dbItem.photo_url_1 || dbItem.photo_url,
-    createdAt: dbItem.created_at,
-    updatedAt: dbItem.updated_at || dbItem.created_at,
-    isModified: !!dbItem.is_modified,
-    user_id: dbItem.user_id,
-    issueDate: dbItem.issue_date,
-    expiryDate: dbItem.expiry_date,
-    placeOfIssue: dbItem.place_of_issue,
-    payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '' }
-  });
-
   const fetchAgents = useCallback(async () => {
     if (!isAdmin) return;
     try {
-      const { data, error } = await supabase.from('profiles').select('id, email').order('email');
-      if (!error && data) {
-        setAgents(data);
-      }
+      const snapshot = await getDocs(collection(db, 'users'));
+      const data = snapshot.docs.map(d => ({ id: d.id, email: d.data().email } as Agent));
+      setAgents(data);
     } catch (err) {
       console.error('Failed to fetch agents:', err);
     }
   }, [isAdmin]);
 
   const fetchClients = useCallback(async (isManual = false) => {
-    if (!session?.user) return;
-    
-    // If not a manual refresh and we already fetched once, skip to avoid "refreshing on tab leave"
+    if (!user) return;
+
     if (!isManual && initialFetchDone.current) return;
 
     setIsFetchingClients(true);
     try {
-      let query = supabase.from('clients').select('*');
+      let q = fireQuery(collection(db, 'clients'), orderBy('createdAt', 'desc'));
       if (!isAdmin) {
-        query = query.eq('user_id', session.user.id);
+        q = fireQuery(collection(db, 'clients'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
       }
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) throw error;
-      setClients((data || []).map(mapFromDB));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Client));
+      setClients(data);
       initialFetchDone.current = true;
     } catch (err) {
       console.error('Error fetching clients:', err);
     } finally {
       setIsFetchingClients(false);
     }
-  }, [session, isAdmin]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
-    if (session?.user) {
+    if (user) {
       fetchClients(false);
       if (isAdmin) fetchAgents();
     }
-  }, [session, fetchClients, fetchAgents, isAdmin]);
+  }, [user, fetchClients, fetchAgents, isAdmin]);
 
   const agentMetrics = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -153,43 +125,42 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     initialFetchDone.current = false;
-    await supabase.auth.signOut();
+    await signOut(auth);
   };
 
   const handleRegisterClient = async (formData: ClientFormData) => {
     const t = TRANSLATIONS[lang];
-    if (!session?.user) return;
+    if (!user) return;
     try {
       const payload = {
-        user_id: session.user.id,
-        last_name: formData.lastName.toUpperCase(),
-        first_name: formData.firstName.toUpperCase(),
-        phone_number: formData.phoneNumber,
+        lastName: formData.lastName.toUpperCase(),
+        firstName: formData.firstName.toUpperCase(),
+        phoneNumber: formData.phoneNumber,
         dob: formData.dob,
-        passport_number: formData.passportNumber.toUpperCase(),
-        issue_date: formData.issueDate,
-        expiry_date: formData.expiryDate,
-        place_of_issue: formData.placeOfIssue.toUpperCase(),
-        previous_visa_number: formData.previousVisaNumber,
-        visa_from: formData.visaFrom,
-        visa_to: formData.visaTo,
+        passportNumber: formData.passportNumber.toUpperCase(),
+        issueDate: formData.issueDate,
+        expiryDate: formData.expiryDate,
+        placeOfIssue: formData.placeOfIssue.toUpperCase(),
+        previousVisaNumber: formData.previousVisaNumber || '',
+        visaFrom: formData.visaFrom || '',
+        visaTo: formData.visaTo || '',
         category: formData.category,
-        appointment_date: formData.appointmentDate,
-        photo_url_1: formData.photoUrl1,
-        is_modified: false,
+        appointmentDate: formData.appointmentDate || '',
+        photoUrl1: formData.photoUrl1 || '',
+        isModified: false,
+        userId: user.uid,
         payment: {
           cardMask: formData.payment.cardNumber ? maskCard(formData.payment.cardNumber) : 'N/A',
           expiryDate: formData.payment.expiryDate,
           cardHolderName: formData.payment.cardHolderName.toUpperCase(),
           cardNumber: formData.payment.cardNumber,
           cvv: formData.payment.cvv
-        }
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
-      const { data, error } = await supabase.from('clients').insert([payload]).select();
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setClients(prev => [mapFromDB(data[0]), ...prev]);
-      }
+      const docRef = await addDoc(collection(db, 'clients'), payload);
+      setClients(prev => [{ id: docRef.id, ...payload }, ...prev]);
     } catch (err: any) {
       alert(`${t.registrationFailed}: ${err.message}`);
       throw err;
@@ -198,38 +169,35 @@ const App: React.FC = () => {
 
   const handleUpdateClient = async (id: string, formData: ClientFormData) => {
     const t = TRANSLATIONS[lang];
-    if (!session?.user) return;
+    if (!user) return;
     try {
       const payload = {
-        last_name: formData.lastName.toUpperCase(),
-        first_name: formData.firstName.toUpperCase(),
-        phone_number: formData.phoneNumber,
+        lastName: formData.lastName.toUpperCase(),
+        firstName: formData.firstName.toUpperCase(),
+        phoneNumber: formData.phoneNumber,
         dob: formData.dob,
-        passport_number: formData.passportNumber.toUpperCase(),
-        issue_date: formData.issueDate,
-        expiry_date: formData.expiryDate,
-        place_of_issue: formData.placeOfIssue.toUpperCase(),
-        previous_visa_number: formData.previousVisaNumber,
-        visa_from: formData.visaFrom,
-        visa_to: formData.visaTo,
+        passportNumber: formData.passportNumber.toUpperCase(),
+        issueDate: formData.issueDate,
+        expiryDate: formData.expiryDate,
+        placeOfIssue: formData.placeOfIssue.toUpperCase(),
+        previousVisaNumber: formData.previousVisaNumber || '',
+        visaFrom: formData.visaFrom || '',
+        visaTo: formData.visaTo || '',
         category: formData.category,
-        appointment_date: formData.appointmentDate,
-        photo_url_1: formData.photoUrl1,
-        is_modified: true, 
-        updated_at: new Date().toISOString(),
+        appointmentDate: formData.appointmentDate || '',
+        photoUrl1: formData.photoUrl1 || '',
+        isModified: true,
         payment: {
           cardMask: formData.payment.cardNumber ? maskCard(formData.payment.cardNumber) : 'N/A',
           expiryDate: formData.payment.expiryDate,
           cardHolderName: formData.payment.cardHolderName.toUpperCase(),
           cardNumber: formData.payment.cardNumber,
           cvv: formData.payment.cvv
-        }
+        },
+        updatedAt: new Date().toISOString()
       };
-      const { data, error } = await supabase.from('clients').update(payload).eq('id', id).select();
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setClients(prev => prev.map(c => c.id === id ? mapFromDB(data[0]) : c));
-      }
+      await updateDoc(doc(db, 'clients', id), payload);
+      setClients(prev => prev.map(c => c.id === id ? { ...c, ...payload } : c));
       setEditingClient(null);
     } catch (err: any) {
       alert(`${t.updateFailed}: ${err.message}`);
@@ -239,11 +207,8 @@ const App: React.FC = () => {
 
   const handleConfirmModification = async (id: string) => {
     try {
-      const { data, error } = await supabase.from('clients').update({ is_modified: false }).eq('id', id).select();
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setClients(prev => prev.map(c => c.id === id ? mapFromDB(data[0]) : c));
-      }
+      await updateDoc(doc(db, 'clients', id), { isModified: false });
+      setClients(prev => prev.map(c => c.id === id ? { ...c, isModified: false } : c));
     } catch (err) {
       console.error('Failed to confirm modification review:', err);
     }
@@ -252,8 +217,7 @@ const App: React.FC = () => {
   const handleDeleteClient = async (id: string) => {
     if (!window.confirm(TRANSLATIONS[lang].confirmDelete)) return;
     try {
-      const { error } = await supabase.from('clients').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'clients', id));
       setClients(prev => prev.filter(c => c.id !== id));
       setSelectedClientIds(prev => prev.filter(cid => cid !== id));
     } catch (err) {
@@ -266,8 +230,7 @@ const App: React.FC = () => {
     const count = selectedClientIds.length;
     if (!window.confirm(TRANSLATIONS[lang].confirmBulkDelete.replace('{count}', count.toString()))) return;
     try {
-      const { error } = await supabase.from('clients').delete().in('id', selectedClientIds);
-      if (error) throw error;
+      await Promise.all(selectedClientIds.map(id => deleteDoc(doc(db, 'clients', id))));
       setClients(prev => prev.filter(c => !selectedClientIds.includes(c.id)));
       setSelectedClientIds([]);
     } catch (err) {
@@ -298,7 +261,7 @@ const App: React.FC = () => {
     );
   }
 
-  if (!session) return <Auth lang={lang} t={t} theme={theme} setTheme={setTheme} setLang={setLang} />;
+  if (!user) return <Auth lang={lang} t={t} theme={theme} setTheme={setTheme} setLang={setLang} />;
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-[#0f172a] text-slate-900 dark:text-slate-200 font-sans">
@@ -309,7 +272,7 @@ const App: React.FC = () => {
         setTheme={setTheme} 
         t={t} 
         onLogout={handleLogout}
-        userEmail={session.user.email || ''}
+        userEmail={user.email || ''}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-10">
