@@ -17,7 +17,7 @@ export interface Client {
   visaTo?: string;
   category: string;
   appointmentDate: string; // ISO date string (YYYY-MM-DD)
-  photoUrl1?: string;
+  photoUrl?: string;
   createdAt: string; // ISO timestamp from DB
   updatedAt: string; // ISO timestamp for modifications
   isModified?: boolean; // Flag for admin review

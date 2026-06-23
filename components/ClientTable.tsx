@@ -52,14 +52,14 @@ const ClientTable: React.FC<ClientTableProps> = ({
 
   const getCategoryStyles = (category: string) => {
     const maps: Record<string, { row: string, badge: string }> = {
-      'ALG1': { row: '', badge: 'bg-green-100 text-green-800 border border-green-200' },
-      'ALG2': { row: '', badge: 'bg-blue-100 text-blue-800 border border-blue-200' },
-      'ALG3': { row: '', badge: 'bg-indigo-100 text-indigo-800 border border-indigo-200' },
-      'ORN1': { row: '', badge: 'bg-orange-100 text-orange-800 border border-orange-200' },
-      'ORN2': { row: '', badge: 'bg-lime-100 text-lime-800 border border-lime-200' },
-      'ORN3': { row: '', badge: 'bg-purple-100 text-purple-800 border border-purple-200' },
+      'ALG1': { row: 'bg-emerald-50/30 dark:bg-emerald-950/10 border-emerald-500', badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' },
+      'ALG2': { row: 'bg-sky-50/30 dark:bg-sky-950/10 border-sky-500', badge: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300' },
+      'ALG3': { row: 'bg-indigo-50/30 dark:bg-indigo-950/10 border-indigo-500', badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' },
+      'ORN1': { row: 'bg-orange-50/30 dark:bg-orange-950/10 border-orange-500', badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
+      'ORN2': { row: 'bg-lime-50/30 dark:bg-lime-950/10 border-lime-500', badge: 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-300' },
+      'ORN3': { row: 'bg-fuchsia-50/30 dark:bg-fuchsia-950/10 border-fuchsia-500', badge: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-300' },
     };
-    return maps[category] || { row: '', badge: 'bg-gray-100 text-gray-800 border border-gray-200' };
+    return maps[category] || { row: 'bg-slate-50/30 dark:bg-slate-800/20 border-slate-400', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300' };
   };
 
   // Filter based on Search and the Registration Date
@@ -144,210 +144,170 @@ const ClientTable: React.FC<ClientTableProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="bg-white dark:bg-[#0f172a] p-5 border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-sm flex flex-col md:flex-row gap-4 items-center">
-        <div className="relative flex-1 w-full group">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+      {/* Search and Fixed Registration Date Filter */}
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 flex flex-col md:flex-row gap-5">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 rtl:left-auto rtl:right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input 
             type="text" 
             placeholder={t.search} 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
-            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 h-11 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-slate-200" 
+            className="w-full pl-12 pr-4 rtl:pr-12 rtl:pl-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold transition-all" 
           />
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-52 group">
-            <CalendarIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+        <div className="flex gap-3">
+          <div className="relative min-w-[220px]">
+            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500 z-10 pointer-events-none" />
             <input 
               type="date" 
               value={dateFilter} 
               onChange={(e) => setDateFilter(e.target.value)} 
-              className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 h-11 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-slate-200" 
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-indigo-500 dark:border-slate-700 bg-indigo-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/20 outline-none font-black transition-all hover:border-indigo-600 shadow-sm" 
             />
           </div>
           <button 
             onClick={() => { setSearch(''); setDateFilter(''); }} 
-            className="h-11 px-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-95 border border-slate-200 dark:border-slate-800 flex items-center gap-2 font-medium text-sm"
+            className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-all active:scale-95 shadow-sm border border-slate-200 dark:border-slate-600"
             title={t.clearFilters}
           >
-            <RefreshCcw className="w-4 h-4" />
-            <span className="hidden sm:inline">{t.clearFilters || 'Clear'}</span>
+            <RefreshCcw className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-10">
         {!isFetching && sortedGroupKeys.length > 0 ? (
           sortedGroupKeys.map(dateKey => (
             <div key={dateKey} className="space-y-4">
-              <div className="flex items-center gap-4 px-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center border border-blue-100 dark:border-blue-800/50">
-                    <CalendarIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight">
-                    {formatDisplayDate(dateKey)}
-                  </h3>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 rounded-full text-[11px] font-semibold border border-slate-200/60 dark:border-slate-700/50">
-                    <Database className="w-3 h-3" />
-                    {groupedClients[dateKey].length} {t.files}
-                  </div>
-                </div>
-                <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
+              <div className="flex items-center gap-6 px-4">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
+                <h3 className="text-sm font-black text-slate-500 flex items-center gap-3">
+                  <Tag className="w-4 h-4 text-indigo-500" />
+                  {formatDisplayDate(dateKey)}
+                  <span className="bg-indigo-600 text-white px-3 py-1 rounded-xl text-[10px] shadow-lg tracking-normal uppercase">{groupedClients[dateKey].length} {t.files}</span>
+                </h3>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
               </div>
-
-              <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto no-scrollbar">
-                  <table className="w-full text-left rtl:text-right border-collapse">
+              <div className="bg-white dark:bg-slate-800 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-700/50 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left rtl:text-right">
                     <thead>
-                      <tr className="bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-slate-800/60">
-                        <th className="p-4 w-12 text-center">
-                          <button 
-                            onClick={handleToggleSelectAll} 
-                            className="flex items-center justify-center w-5 h-5 rounded border border-slate-300 dark:border-slate-700 hover:border-blue-500 transition-colors"
-                          >
-                            {filteredVisibleClients.length > 0 && filteredVisibleClients.every(c => selectedClientIds.includes(c.id)) 
-                              ? <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" /> 
-                              : <div className="w-2.5 h-2.5 rounded-sm bg-transparent" />
-                            }
+                      <tr className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] border-b dark:border-slate-700/50">
+                        <th className="px-6 py-5 text-center w-12">
+                          <button onClick={handleToggleSelectAll} className="hover:text-indigo-500 transition-colors">
+                            {filteredVisibleClients.length > 0 && filteredVisibleClients.every(c => selectedClientIds.includes(c.id)) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                           </button>
                         </th>
-                        <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.photo}</th>
-                        <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.lastName} & {t.firstName}</th>
-                        <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.passportNumber}</th>
-                        <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.category}</th>
-                        <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.logistics}</th>
-                        <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.payment}</th>
-                        <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center">{t.protocol}</th>
+                        <th className="px-6 py-5">{t.photo}</th>
+                        <th className="px-6 py-5">{t.lastName} & {t.firstName}</th>
+                        <th className="px-6 py-5">{t.passportNumber}</th>
+                        <th className="px-6 py-5">{t.category}</th>
+                        <th className="px-6 py-5">{t.logistics}</th>
+                        <th className="px-6 py-5">{t.payment}</th>
+                        <th className="px-6 py-5 text-center">{t.protocol}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                       {groupedClients[dateKey].map((client) => {
                         const isModified = isAdmin && client.isModified;
                         const styles = getCategoryStyles(client.category);
                         const isSelected = selectedClientIds.includes(client.id);
+                        
+                        // We use the Registration Time for the main clock display
                         const regTime = new Date(client.createdAt);
-                        const regTimeStr = regTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const regTimeStr = regTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                        // If modified, we show the Update time as secondary info
+                        const modTime = new Date(client.updatedAt);
+                        const modTimeStr = modTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                         return (
-                          <tr 
-                            key={client.id} 
-                            className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/40 ${
-                              isSelected ? 'bg-blue-50/40 dark:bg-blue-900/10' : ''
-                            } ${isModified && !isSelected ? 'bg-red-50/20 dark:bg-red-950/10' : ''}`}
-                          >
-                            <td className="p-4 text-center">
-                              <button 
-                                onClick={() => onToggleClientSelect?.(client.id)} 
-                                className={`flex items-center justify-center w-5 h-5 rounded border transition-all ${
-                                  isSelected 
-                                    ? 'border-blue-500 bg-blue-500 text-white' 
-                                    : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
-                                }`}
-                              >
-                                {isSelected && <Check className="w-3 h-3" />}
+                          <tr key={client.id} className={`group transition-all border-l-[8px] ${isSelected ? 'bg-indigo-50/40 dark:bg-indigo-900/20 border-indigo-600' : styles.row} ${isModified && !isSelected ? 'bg-red-50/20 dark:bg-red-950/20 animate-pulse' : ''}`}>
+                            <td className="px-6 py-5 text-center">
+                              <button onClick={() => onToggleClientSelect?.(client.id)} className={`${isSelected ? 'text-indigo-600' : 'text-slate-300 dark:text-slate-600'} hover:text-indigo-500 transition-all`}>
+                                {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                               </button>
                             </td>
-                            <td className="p-4">
-                              <div className="w-10 h-12 rounded-lg bg-slate-100 dark:bg-slate-900 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-800 shadow-sm transition-transform group-hover:scale-105">
-                                {client.photoUrl1 ? (
-                                  <img src={client.photoUrl1} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <User className="w-5 h-5 text-slate-300" />
-                                )}
+                            <td className="px-6 py-5">
+                              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center border-2 border-slate-100 dark:border-slate-700 shadow-xl group-hover:scale-110 transition-transform">
+                                {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-7 h-7 text-slate-300" />}
                               </div>
                             </td>
-                            <td className="p-4">
+                            <td className="px-6 py-5">
                               <div className="flex flex-col">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-bold text-slate-800 dark:text-slate-200 tracking-tight">
-                                    {client.firstName} {client.lastName}
-                                  </span>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm font-black uppercase tracking-tighter text-slate-900 dark:text-white">{client.firstName} {client.lastName}</span>
                                   {isModified && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-full">
-                                      <ShieldAlert className="w-3 h-3" /> {t.updated}
-                                    </span>
+                                    <div className="flex flex-col items-start gap-1">
+                                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-600 text-white text-[8px] font-black rounded-lg shadow-lg shadow-red-500/30">
+                                        <ShieldAlert className="w-2.5 h-2.5" /> {t.updated}
+                                        {onConfirmModification && (
+                                          <button onClick={(e) => { e.stopPropagation(); onConfirmModification(client.id); }} className="ml-1 p-0.5 bg-white/20 rounded hover:bg-white/40 transition-colors" title="Confirm modification">
+                                            <CheckCircle className="w-2.5 h-2.5" />
+                                          </button>
+                                        )}
+                                      </div>
+                                      <div className="text-[7px] font-black text-red-600/90 mt-0.5 whitespace-nowrap px-1 uppercase tracking-tighter">
+                                        MOD: {modTime.toLocaleDateString()} {modTimeStr}
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium mt-1">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 mt-1" title="Registration Time">
                                   <Clock className="w-3 h-3" /> {regTimeStr}
                                 </div>
                               </div>
                             </td>
-                            <td className="p-4">
-                              <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-900/80 rounded-lg font-mono text-[11px] font-bold text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800/50">
-                                {client.passportNumber}
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${styles.badge}`}>
+                            <td className="px-6 py-5 font-black text-slate-800 dark:text-slate-200 tabular-nums tracking-[0.2em]">{client.passportNumber}</td>
+                            <td className="px-6 py-5">
+                              <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border shadow-sm ${styles.badge}`}>
                                 {client.category}
                               </span>
                             </td>
-                            <td className="p-4">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                  <Plane className="w-3.5 h-3.5 text-blue-500/70" /> 
-                                  {client.previousVisaNumber || '---'}
+                            <td className="px-6 py-5">
+                              <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2 text-[11px] font-black text-slate-900 dark:text-white">
+                                  <Plane className="w-4 h-4 text-blue-500" /> {client.previousVisaNumber || '---'}
                                 </div>
-                                <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
-                                  <CalendarIcon className="w-3 h-3" />
-                                  {client.visaFrom || '---'} • {client.visaTo || '---'}
+                                <div className="text-[9px] font-bold text-slate-400">
+                                  {client.visaFrom || '---'} &rarr; {client.visaTo || '---'}
                                 </div>
                               </div>
                             </td>
-                            <td className="p-4">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                  <CardIcon className="w-3.5 h-3.5 text-emerald-500/70" /> 
-                                  {client.payment.cardMask || '---'}
+                            <td className="px-6 py-5">
+                              <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2 text-[11px] font-black text-slate-900 dark:text-white">
+                                  <CardIcon className="w-4 h-4 text-amber-500" /> {client.payment.cardMask || '---'}
                                 </div>
-                                <div className="text-[11px] text-slate-400 font-medium flex items-center gap-2">
-                                  <span className="bg-slate-100 dark:bg-slate-900 px-1.5 rounded text-[9px] font-bold">EXP: {client.payment.expiryDate || '--'}</span>
-                                  <span className="bg-slate-100 dark:bg-slate-900 px-1.5 rounded text-[9px] font-bold">CVV: {client.payment.cvv ? '***' : '--'}</span>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase">
+                                  EXP: {client.payment.expiryDate || '--'} | CVV: {client.payment.cvv ? '***' : '--'}
                                 </div>
                               </div>
                             </td>
-                            <td className="p-4">
-                              <div className="flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                                <button 
-                                  onClick={() => onEdit(client)} 
-                                  className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all" 
-                                  title={t.edit}
-                                >
+                            <td className="px-6 py-5">
+                              <div className="flex items-center justify-center gap-2 opacity-100 transition-all">
+                                <button onClick={() => onEdit(client)} className="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm" title={t.edit}>
                                   <Edit className="w-4 h-4" />
                                 </button>
                                 
                                 <button 
                                   onClick={() => handleCopyClientDetails(client)} 
-                                  className={`p-2 rounded-lg transition-all ${
-                                    copiedId === client.id 
-                                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
-                                      : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                  }`}
+                                  className={`p-2.5 rounded-xl transition-all shadow-sm ${copiedId === client.id ? 'bg-emerald-600 text-white' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-600 hover:text-white'}`}
                                   title={t.copy}
                                 >
                                   {copiedId === client.id ? <Check className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                                 </button>
- 
+
                                 <button 
                                   onClick={() => handleCopyPaymentDetails(client)} 
-                                  className={`p-2 rounded-lg transition-all ${
-                                    copiedPaymentId === client.id 
-                                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
-                                      : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                  }`}
+                                  className={`p-2.5 rounded-xl transition-all shadow-sm ${copiedPaymentId === client.id ? 'bg-amber-600 text-white' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 hover:bg-amber-600 hover:text-white'}`}
                                   title={t.copyPayment}
                                 >
                                   {copiedPaymentId === client.id ? <Check className="w-4 h-4" /> : <Wallet className="w-4 h-4" />}
                                 </button>
                                 
-                                <button 
-                                  onClick={() => onDelete(client.id)} 
-                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all" 
-                                  title={t.delete}
-                                >
+                                <button onClick={() => onDelete(client.id)} className="p-2.5 bg-red-50 dark:bg-red-900/30 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm" title={t.delete}>
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
@@ -362,16 +322,10 @@ const ClientTable: React.FC<ClientTableProps> = ({
             </div>
           ))
         ) : (
-          <div className="bg-white dark:bg-[#0f172a] py-20 flex flex-col items-center justify-center text-center border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-sm">
-            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-full mb-6 border border-slate-100 dark:border-slate-800">
-              <Database className="w-12 h-12 text-slate-200 dark:text-slate-700" />
-            </div>
-            <h4 className="text-base font-bold text-slate-700 dark:text-slate-200 mb-2">
-              {t.noRecordsFound}
-            </h4>
-            <p className="text-sm text-slate-400 max-w-xs mx-auto">
-              {clients.length === 0 ? t.emptyPool : t.filterNoMatch}
-            </p>
+          <div className="text-center py-40 bg-white dark:bg-slate-800 rounded-[48px] border-4 border-dashed border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center">
+            <div className="p-10 bg-slate-50 dark:bg-slate-900/50 rounded-full mb-8"><Database className="w-20 h-20 text-slate-200" /></div>
+            <h4 className="text-2xl font-black uppercase text-slate-900 dark:text-white mb-2">{t.noRecordsFound}</h4>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{clients.length === 0 ? t.emptyPool : t.filterNoMatch}</p>
           </div>
         )}
       </div>

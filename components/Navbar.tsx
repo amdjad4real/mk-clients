@@ -15,67 +15,102 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ lang, setLang, theme, setTheme, t, onLogout, userEmail }) => {
   const userName = userEmail.split('@')[0] || 'Admin';
-  const isAdmin = userEmail === 'admin@mkservice.com';
+  const isAdmin = useMemo(() => userEmail === 'admin@mkservice.com', [userEmail]);
 
   return (
-    <nav className="sticky top-0 z-50 w-full glass-panel border-b border-slate-200 dark:border-slate-800/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-4 group cursor-pointer">
-          <div className="p-2.5 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-500/30 group-hover:rotate-6 transition-transform duration-300">
-            <ShieldCheck className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white font-display tracking-tight leading-none">
-              {t.appTitle}
-            </h1>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1.5 opacity-80">
-              {isAdmin ? t.rootAdmin : t.portalVersion}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="hidden lg:flex items-center gap-4 px-6 py-2 border-x border-slate-200 dark:border-slate-800/50">
-            <div className="flex flex-col items-end">
-              <span className="text-sm font-bold text-slate-900 dark:text-white leading-none tracking-tight">{userName}</span>
-              <span className="text-[11px] text-slate-500 font-semibold mt-1 uppercase tracking-wider opacity-70">{userEmail}</span>
+    <nav className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+      isAdmin 
+        ? 'bg-slate-900 text-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] border-b border-indigo-500/30' 
+        : 'bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-xl'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-20 items-center">
+          <div className="flex items-center space-x-5 rtl:space-x-reverse">
+            <div className={`p-3 rounded-2xl shadow-lg transition-transform hover:scale-105 ${
+              isAdmin ? 'bg-indigo-600 shadow-indigo-500/40' : 'bg-blue-600 shadow-blue-500/20'
+            }`}>
+              {isAdmin ? <LayoutDashboard className="w-8 h-8 text-white" /> : <ShieldCheck className="w-8 h-8 text-white" />}
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center border border-slate-200 dark:border-slate-700/50 shadow-inner">
-              <User className="w-5 h-5 text-slate-500" />
+            <div>
+              <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">
+                {t.appTitle}
+              </h1>
+              <div className="flex items-center gap-2 mt-1.5">
+                {isAdmin ? (
+                   <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500 text-[10px] font-black rounded-lg uppercase tracking-widest animate-pulse">
+                     <Star className="w-3 h-3 fill-white" /> {t.rootAdmin}
+                   </div>
+                ) : (
+                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t.portalVersion}</span>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-1.5 p-1.5 bg-slate-100/50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800/50">
-            {(['en', 'fr', 'ar'] as Language[]).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={`px-4 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-300 ${
-                  lang === l
-                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-white shadow-md'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          <div className="flex items-center space-x-5 rtl:space-x-reverse">
+            {/* User Profile Card */}
+            <div className={`hidden md:flex items-center space-x-4 rtl:space-x-reverse border-r ${
+              isAdmin ? 'border-slate-700' : 'dark:border-slate-700'
+            } pr-5 rtl:pr-0 rtl:pl-5`}>
+              <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center transition-all ${
+                isAdmin 
+                  ? 'bg-indigo-600/20 border-indigo-400/50 shadow-lg shadow-indigo-500/20' 
+                  : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'
+              }`}>
+                <User className={`w-6 h-6 ${isAdmin ? 'text-indigo-300' : 'text-blue-600 dark:text-blue-400'}`} />
+              </div>
+              <div className="flex flex-col">
+                <span className={`text-[10px] font-black uppercase tracking-widest ${isAdmin ? 'text-indigo-400' : 'text-slate-500'}`}>{t.sessionLive}</span>
+                <span className={`text-sm font-black uppercase whitespace-nowrap ${isAdmin ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
+                  {t.welcome} <span className={isAdmin ? 'text-indigo-300 underline underline-offset-4 decoration-indigo-500/50' : 'text-blue-600 dark:text-blue-400'}>{userName}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Language Selection */}
+            <div className="relative group">
+              <Globe className="w-4 h-4 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value as Language)}
+                className={`pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 rounded-xl border appearance-none cursor-pointer text-xs font-black uppercase transition-all shadow-sm ${
+                  isAdmin 
+                    ? 'bg-slate-800 border-slate-700 text-white focus:ring-indigo-500' 
+                    : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-blue-500'
                 }`}
               >
-                {l.toUpperCase()}
+                <option value="en">EN</option>
+                <option value="fr">FR</option>
+                <option value="ar">AR</option>
+              </select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                className={`p-3 rounded-xl transition-all border ${
+                  isAdmin 
+                    ? 'hover:bg-slate-800 border-slate-700 text-slate-400 hover:text-yellow-400' 
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-700 border-transparent text-slate-600 dark:text-slate-400'
+                }`}
+                title="Toggle Theme"
+              >
+                {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
               </button>
-            ))}
-          </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100/50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all active:scale-90"
-            >
-              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-            </button>
-
-            <button 
-              onClick={onLogout}
-              className="w-10 h-10 flex items-center justify-center rounded-2xl bg-red-50 dark:bg-red-900/10 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all active:scale-90"
-              title={t.logout}
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+              <button 
+                onClick={onLogout}
+                className={`flex items-center space-x-2 rtl:space-x-reverse px-5 py-3 rounded-2xl text-red-500 transition-all group border-2 ${
+                  isAdmin 
+                    ? 'border-transparent hover:bg-red-500/10 hover:border-red-500/40' 
+                    : 'border-transparent hover:bg-red-50 dark:hover:bg-red-950/20'
+                }`}
+              >
+                <LogOut className="w-5 h-5 group-hover:-translate-x-1 rtl:group-hover:translate-x-1 transition-transform" />
+                <span className="text-xs font-black uppercase hidden lg:block tracking-widest">{t.logout}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

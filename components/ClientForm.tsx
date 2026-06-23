@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, CreditCard, User, ClipboardPaste, ScanLine, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X, Trash2, CheckCircle2, Upload } from 'lucide-react';
+import { Camera, CreditCard, User, ClipboardPaste, ScanLine, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
 import { CATEGORIES } from '../constants';
-import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate, compressImage } from '../utils/helpers';
+import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate } from '../utils/helpers';
 
 interface ClientFormProps {
   lang: Language;
@@ -60,7 +60,7 @@ const CalendarPicker: React.FC<{
           onSelect(dateStr);
           onClose();
         }}
-        className="h-6 w-6 flex items-center justify-center text-[10px] font-bold rounded-md hover:bg-blue-600 hover:text-white transition-colors text-slate-700 dark:text-slate-200"
+        className="h-8 w-8 flex items-center justify-center text-sm font-bold rounded-lg hover:bg-blue-600 hover:text-white transition-colors text-slate-700 dark:text-slate-200"
       >
         {d}
       </button>
@@ -68,21 +68,21 @@ const CalendarPicker: React.FC<{
   }
 
   return (
-    <div className="absolute z-50 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-2xl p-2 w-48 animate-in fade-in zoom-in duration-200 overflow-hidden">
-      <div className="flex items-center justify-between mb-2">
-        <button type="button" onClick={handlePrevMonth} className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors">
-          <ChevronLeft className="w-3 h-3 text-slate-500" />
+    <div className="absolute z-50 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-4 w-64 animate-in fade-in zoom-in duration-200 overflow-hidden">
+      <div className="flex items-center justify-between mb-4">
+        <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <ChevronLeft className="w-4 h-4 text-slate-500" />
         </button>
-        <span className="text-[10px] font-black text-slate-900 dark:text-white">
+        <span className="text-sm font-black text-slate-900 dark:text-white">
           {(monthNames as any)[lang][month]} {year}
         </span>
-        <button type="button" onClick={handleNextMonth} className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors">
-          <ChevronRight className="w-3 h-3 text-slate-500" />
+        <button type="button" onClick={handleNextMonth} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <ChevronRight className="w-4 h-4 text-slate-500" />
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-0.5 mb-1">
+      <div className="grid grid-cols-7 gap-1 mb-2">
         {(weekDays as any)[lang].map((d: string) => (
-          <div key={d} className="h-6 w-6 flex items-center justify-center text-[8px] font-black text-slate-400 uppercase">
+          <div key={d} className="h-8 w-8 flex items-center justify-center text-[10px] font-black text-slate-400 uppercase">
             {d}
           </div>
         ))}
@@ -155,7 +155,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     visaTo: '',
     category: '',
     appointmentDate: '',
-    photoUrl1: '',
+    photoUrl: '',
     payment: {
       cardNumber: '',
       cardHolderName: '',
@@ -167,7 +167,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const photo1InputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -186,7 +186,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         visaTo: initialData.visaTo || '',
         category: initialData.category || '',
         appointmentDate: initialData.appointmentDate || '',
-        photoUrl1: initialData.photoUrl1 || '',
+        photoUrl: initialData.photoUrl || '',
         payment: {
           cardNumber: initialData.payment?.cardNumber || '',
           cardHolderName: (initialData.payment?.cardHolderName || '').toUpperCase(),
@@ -337,8 +337,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
 
     if (!formData.placeOfIssue.trim()) newErrors.placeOfIssue = t.validation.required;
     if (!formData.category) newErrors.category = t.validation.required;
-    
-    if (!formData.photoUrl1) newErrors.photoUrl1 = t.validation.required;
 
     const p = formData.payment;
     const hasSomePaymentInfo = p.cardNumber || p.cardHolderName || p.expiryDate || p.cvv;
@@ -401,7 +399,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       visaTo: '',
       category: '',
       appointmentDate: '',
-      photoUrl1: '',
+      photoUrl: '',
       payment: {
         cardNumber: '',
         cardHolderName: '',
@@ -410,7 +408,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       }
     });
     setErrors({});
-    if (photo1InputRef.current) photo1InputRef.current.value = '';
+    if (photoInputRef.current) photoInputRef.current.value = '';
   };
 
   const renderInput = (
@@ -430,12 +428,16 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       ? (field === 'paymentExpiry' ? formData.payment.expiryDate : (formData.payment as any)[field])
       : (formData as any)[field];
 
-    const inputClasses = `input-field ${error ? 'border-red-500 ring-1 ring-red-500' : ''} ${isCapitalizedField ? 'uppercase' : ''}`;
+    const inputClasses = `w-full px-4 py-2 rounded-lg border ${
+      error ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300 dark:border-slate-600'
+    } bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 ${
+      isCapitalizedField ? 'uppercase' : ''
+    }`;
 
     return (
-      <div className="space-y-1.5 relative">
-        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1 ml-1">
-          {label} {required && <span className="text-red-500">*</span>}
+      <div className="space-y-1 relative">
+        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center">
+          {label} {required && <span className="text-red-500 ml-1">*</span>}
         </label>
         {options ? (
           <select
@@ -471,14 +473,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                   setFormData(prev => ({ ...prev, [field]: newVal }));
                 }
               }}
-              className={`${inputClasses} ${field === 'appointmentDate' ? 'pr-10' : ''}`}
+              className={`${inputClasses} ${field === 'appointmentDate' ? 'pr-10 rtl:pl-10' : ''}`}
             />
             {field === 'appointmentDate' && (
               <div ref={calendarRef}>
                 <button
                   type="button"
                   onClick={() => setShowCalendar(!showCalendar)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors"
                 >
                   <CalendarIcon className="w-4 h-4" />
                 </button>
@@ -494,163 +496,129 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             )}
           </div>
         )}
-        {error && <p className="text-[10px] text-red-500 font-bold uppercase mt-1 ml-1">{error}</p>}
+        {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
       </div>
     );
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={handleOcrPaste}
-          disabled={isSubmitting}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all border border-emerald-100 dark:border-emerald-800 disabled:opacity-50 uppercase tracking-widest"
-        >
-          <ScanLine className="w-3.5 h-3.5" />
-          {t.pasteOcr}
-        </button>
-        <button
-          type="button"
-          onClick={handlePaste}
-          disabled={isSubmitting}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50 uppercase tracking-widest"
-        >
-          <ClipboardPaste className="w-3.5 h-3.5" />
-          {t.paste}
-        </button>
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t.addNewClient}</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleOcrPaste}
+            disabled={isSubmitting}
+            title="Paste scanned passport data (Nom, Prénoms, Date de naissance, etc.)"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-black hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all border border-emerald-100 dark:border-emerald-800 disabled:opacity-50"
+          >
+            <ScanLine className="w-3.5 h-3.5" />
+            {t.pasteOcr}
+          </button>
+          <button
+            type="button"
+            onClick={handlePaste}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-black hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all border border-blue-100 dark:border-blue-800 disabled:opacity-50"
+          >
+            <ClipboardPaste className="w-3.5 h-3.5" />
+            {t.paste}
+          </button>
+        </div>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 gap-8">
-          {/* Photo Upload Section */}
-          <div className="space-y-3">
-            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">
-              {t.photo} <span className="text-red-500">*</span>
-            </label>
-            <div 
-              className={`relative aspect-square w-32 mx-auto rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden group ${
-                errors.photoUrl1 ? 'border-red-500 bg-red-50 dark:bg-red-900/10' : 'border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 bg-slate-50 dark:bg-slate-900/50'
-              }`}
-              onClick={() => photo1InputRef.current?.click()}
-            >
-              {formData.photoUrl1 ? (
-                <div className="relative w-full h-full">
-                  <img src={formData.photoUrl1} alt="Client Photo" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Camera className="w-6 h-6 text-white" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFormData(prev => ({ ...prev, photoUrl1: '' }));
-                      if (photo1InputRef.current) photo1InputRef.current.value = '';
-                    }}
-                    className="absolute top-2 right-2 p-1.5 bg-white text-slate-900 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-lg"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400">
-                  <Upload className="w-6 h-6" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">{t.uploadPhoto}</span>
-                </div>
-              )}
-              <input 
-                type="file" 
-                ref={photo1InputRef}
-                className="hidden"
-                onChange={async (e) => {
+      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+        <div className="space-y-6">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse border-b dark:border-slate-700 pb-2">
+            <User className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-bold">{t.clientDetails}</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="lg:row-span-2 flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+              <div className="relative w-32 h-32 rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center mb-4">
+                {formData.photoUrl ? (
+                  <img src={formData.photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <Camera className="w-12 h-12 text-slate-400" />
+                )}
+                <input type="file" ref={photoInputRef} disabled={isSubmitting} onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    try {
-                      const compressed = await compressImage(file, 200);
-                      setFormData(prev => ({ ...prev, photoUrl1: compressed }));
-                    } catch (err) {
-                      console.error('Compression failed:', err);
-                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => setFormData(prev => ({ ...prev, photoUrl: reader.result as string }));
+                    reader.readAsDataURL(file);
                   }
-                }}
-                accept="image/png, image/jpeg"
-              />
+                }} accept="image/png, image/jpeg" className="hidden" />
+              </div>
+              <button 
+                type="button" 
+                disabled={isSubmitting}
+                onClick={() => photoInputRef.current?.click()} 
+                className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-2 disabled:opacity-50"
+              >
+                <Camera className="w-4 h-4" /> {t.photo}
+              </button>
             </div>
-            {errors.photoUrl1 && <p className="text-[10px] text-red-500 font-bold uppercase text-center mt-1">{errors.photoUrl1}</p>}
-          </div>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              {renderInput(t.lastName, 'lastName')}
-              {renderInput(t.firstName, 'firstName')}
-              {renderInput(t.dob, 'dob')}
-              {renderInput(t.passportNumber, 'passportNumber')}
-              {renderInput(t.issueDate, 'issueDate')}
-              {renderInput(t.expiryDate, 'expiryDate')}
-              {renderInput(t.placeOfIssue, 'placeOfIssue')}
-              {renderInput(t.category, 'category', 'select', true, '', CATEGORIES)}
-              {renderInput(t.appointmentDate, 'appointmentDate', 'text', false)}
-              {renderInput(t.prevVisa, 'previousVisaNumber', 'text', false)}
-              {renderInput(t.visaFrom, 'visaFrom', 'text', false)}
-              {renderInput(t.visaTo, 'visaTo', 'text', false)}
-              {renderInput(t.phoneNumber, 'phoneNumber', 'tel', false)}
-            </div>
+            {renderInput(t.lastName, 'lastName')}
+            {renderInput(t.firstName, 'firstName')}
+            {renderInput(t.dob, 'dob', 'text', true, 'YYYY-MM-DD')}
+            {renderInput(t.passportNumber, 'passportNumber', 'text', true, '123456789')}
+            {renderInput(t.issueDate, 'issueDate', 'text', true, 'YYYY-MM-DD')}
+            {renderInput(t.expiryDate, 'expiryDate', 'text', true, 'YYYY-MM-DD')}
+            {renderInput(t.placeOfIssue, 'placeOfIssue')}
+            {renderInput(t.category, 'category', 'select', true, '', CATEGORIES)}
+            {renderInput(t.appointmentDate, 'appointmentDate', 'text', false, 'YYYY-MM-DD')}
+            {renderInput(t.prevVisa, 'previousVisaNumber', 'text', false)}
+            {renderInput(t.visaFrom, 'visaFrom', 'text', false, 'YYYY-MM-DD')}
+            {renderInput(t.visaTo, 'visaTo', 'text', false, 'YYYY-MM-DD')}
+            {renderInput(t.phoneNumber, 'phoneNumber', 'tel', false)}
           </div>
         </div>
-
-        <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
-              <CreditCard className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-            </div>
-            <h3 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t.paymentDetails}</h3>
+        <div className="space-y-6 pt-4">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse border-b dark:border-slate-700 pb-2">
+            <CreditCard className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-bold">{t.paymentDetails}</h3>
           </div>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {renderInput(t.cardNumber, 'cardNumber', 'text', false, '#### #### #### ####')}
             {renderInput(t.cardHolder, 'cardHolderName', 'text', false)}
-            <div className="grid grid-cols-2 gap-4">
-              {renderInput(t.expiryDate, 'paymentExpiry', 'text', false, 'MM/YYYY')}
-              {renderInput(t.cvv, 'cvv', 'text', false, '***')}
-            </div>
+            {renderInput(t.expiryDate, 'paymentExpiry', 'text', false, 'MM/YYYY')}
+            {renderInput(t.cvv, 'cvv', 'text', false, '***')}
           </div>
         </div>
-
-        <div className="flex flex-col gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 rtl:space-x-reverse pt-6 border-t dark:border-slate-700">
+          <button 
+            type="button" 
+            onClick={handleClear} 
+            disabled={isSubmitting}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+          >
+            {t.clear}
+          </button>
+          {onCancel && (
+            <button 
+              type="button" 
+              onClick={onCancel} 
+              disabled={isSubmitting}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+            >
+              {t.cancel}
+            </button>
+          )}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="btn-primary w-full py-3 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
               <>
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="text-sm">{initialData ? t.update : t.register}</span>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Processing...</span>
               </>
+            ) : (
+              initialData ? t.saveChanges : t.register
             )}
           </button>
-          
-          <div className="flex gap-3">
-            <button 
-              type="button" 
-              onClick={handleClear} 
-              disabled={isSubmitting}
-              className="flex-1 py-2.5 rounded-2xl font-bold text-[11px] text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all uppercase tracking-widest"
-            >
-              {t.clear}
-            </button>
-            {onCancel && (
-              <button 
-                type="button" 
-                onClick={onCancel} 
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 rounded-2xl font-bold text-[11px] text-slate-500 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all uppercase tracking-widest"
-              >
-                {t.cancel}
-              </button>
-            )}
-          </div>
         </div>
       </form>
     </div>
