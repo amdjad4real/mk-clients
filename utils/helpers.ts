@@ -118,3 +118,45 @@ export const normalizeToDashDate = (dateStr: string): string => {
 
   return cleaned;
 };
+
+export const compressImage = (
+  dataUrl: string,
+  maxBytes: number = 200 * 1024,
+  maxWidth: number = 800,
+  maxHeight: number = 800
+): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      let quality = 0.85;
+      let result = canvas.toDataURL('image/jpeg', quality);
+
+      const tryCompress = () => {
+        const bytes = Math.round((result.length - 'data:image/jpeg;base64,'.length) * 0.75);
+        if (bytes <= maxBytes || quality <= 0.1) {
+          resolve(result);
+          return;
+        }
+        quality -= 0.1;
+        result = canvas.toDataURL('image/jpeg', quality);
+        tryCompress();
+      };
+
+      tryCompress();
+    };
+    img.src = dataUrl;
+  });
+};

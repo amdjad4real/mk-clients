@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, ScanLine, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
 import { CATEGORIES } from '../constants';
-import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate } from '../utils/helpers';
+import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate, compressImage } from '../utils/helpers';
 
 interface ClientFormProps {
   lang: Language;
@@ -541,11 +541,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                 ) : (
                   <Camera className="w-12 h-12 text-slate-400" />
                 )}
-                <input type="file" ref={photoInputRef} disabled={isSubmitting} onChange={(e) => {
+                <input type="file" ref={photoInputRef} disabled={isSubmitting} onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
                     const reader = new FileReader();
-                    reader.onloadend = () => setFormData(prev => ({ ...prev, photoUrl: reader.result as string }));
+                    reader.onloadend = async () => {
+                      const compressed = await compressImage(reader.result as string);
+                      setFormData(prev => ({ ...prev, photoUrl: compressed }));
+                    };
                     reader.readAsDataURL(file);
                   }
                 }} accept="image/png, image/jpeg" className="hidden" />
