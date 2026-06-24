@@ -119,7 +119,11 @@ const App: React.FC = () => {
         q = fireQuery(collection(db, 'clients'), where('user_id', '==', session.user.uid));
       }
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() as Record<string, any> }));
+      const data = snapshot.docs.map(d => {
+        const docData = d.data() as Record<string, any>;
+        const { id: _supabaseId, ...rest } = docData;
+        return { id: d.id, ...rest };
+      });
       const sorted = (data as any[]).sort((a, b) => {
         const dateA = a.created_at || '';
         const dateB = b.created_at || '';
@@ -253,7 +257,7 @@ const App: React.FC = () => {
       setSelectedClientIds(prev => prev.filter(cid => cid !== id));
     } catch (err: any) {
       console.error('Delete failed:', err);
-      alert(`Delete failed: ${err.message || err}`);
+      alert(`${TRANSLATIONS[lang].updateFailed}: ${err.message}`);
     }
   };
 
@@ -267,7 +271,7 @@ const App: React.FC = () => {
       setSelectedClientIds([]);
     } catch (err: any) {
       console.error('Batch deletion failed:', err);
-      alert(`Delete failed: ${err.message || err}`);
+      alert(`${TRANSLATIONS[lang].updateFailed}: ${err.message}`);
     }
   };
 
