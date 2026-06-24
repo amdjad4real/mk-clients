@@ -251,8 +251,9 @@ const App: React.FC = () => {
       await deleteDoc(doc(db, 'clients', id));
       setClients(prev => prev.filter(c => c.id !== id));
       setSelectedClientIds(prev => prev.filter(cid => cid !== id));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete failed:', err);
+      alert(`Delete failed: ${err.message || err}`);
     }
   };
 
@@ -264,9 +265,9 @@ const App: React.FC = () => {
       await Promise.all(selectedClientIds.map(id => deleteDoc(doc(db, 'clients', id))));
       setClients(prev => prev.filter(c => !selectedClientIds.includes(c.id)));
       setSelectedClientIds([]);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Batch deletion failed:', err);
-      alert('Batch deletion failed. Please check your connection.');
+      alert(`Delete failed: ${err.message || err}`);
     }
   };
 
