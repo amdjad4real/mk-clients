@@ -9,7 +9,7 @@ import Auth from './components/Auth';
 import { maskCard } from './utils/helpers';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X } from 'lucide-react';
 
 interface Agent {
@@ -45,10 +45,19 @@ const App: React.FC = () => {
   const isAdmin = useMemo(() => session?.user?.email === 'admin@mkservice.com', [session]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setSession(firebaseUser ? { user: firebaseUser } : null);
       if (firebaseUser && firebaseUser.email !== 'admin@mkservice.com') {
         setIsFormOpen(true);
+        // Auto-create users collection doc for existing agents (backfill)
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            email: firebaseUser.email,
+            createdAt: new Date().toISOString()
+          });
+        }
       }
       setIsLoadingSession(false);
     });

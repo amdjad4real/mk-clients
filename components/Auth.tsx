@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Mail, Lock, ArrowRight, ArrowLeft, Loader2, Globe, Sun, Moon } from 'lucide-react';
 import { Language, Theme } from '../types';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthProps {
   lang: Language;
@@ -42,7 +43,11 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
         if (isLogin) {
           await signInWithEmailAndPassword(auth, email, password);
         } else {
-          await createUserWithEmailAndPassword(auth, email, password);
+          const cred = await createUserWithEmailAndPassword(auth, email, password);
+          await setDoc(doc(db, 'users', cred.user.uid), {
+            email: cred.user.email,
+            createdAt: new Date().toISOString()
+          });
           alert(t.checkEmail);
         }
       } catch (err: any) {
