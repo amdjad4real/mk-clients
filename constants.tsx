@@ -3,6 +3,9 @@ import React from 'react';
 
 export const CATEGORIES = ['ALG1', 'ALG2', 'ALG3', 'ORN1', 'ORN2', 'ORN3'];
 
+export const TELEGRAM_BOT_TOKEN = 'YOUR_BOT_TOKEN';
+export const TELEGRAM_CHAT_ID = 'YOUR_CHAT_ID';
+
 export const PAYMENT_STATUSES = ['ydjouz', 'en_attente', 'carte_bloquee', 'annule'] as const;
 
 export const PAYMENT_STATUS_LABELS: Record<string, { en: string; fr: string; ar: string }> = {

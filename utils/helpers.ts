@@ -127,6 +127,24 @@ export const getCardType = (cardNumber: string): 'EDAHABIA' | 'CIB' | null => {
   return 'CIB';
 };
 
+export const sendTelegramAlert = async (message: string) => {
+  const { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } = await import('../constants');
+  if (TELEGRAM_BOT_TOKEN === 'YOUR_BOT_TOKEN') return;
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+  } catch (err) {
+    console.error('Telegram alert failed:', err);
+  }
+};
+
 export const compressImage = (
   dataUrl: string,
   maxBytes: number = 200 * 1024,

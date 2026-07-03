@@ -6,7 +6,7 @@ import Navbar from './components/Navbar';
 import ClientForm from './components/ClientForm';
 import ClientTable from './components/ClientTable';
 import Auth from './components/Auth';
-import { maskCard, getCardType } from './utils/helpers';
+import { maskCard, getCardType, sendTelegramAlert } from './utils/helpers';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -227,6 +227,7 @@ const App: React.FC = () => {
   const handleUpdateClient = async (id: string, formData: ClientFormData) => {
     const t = TRANSLATIONS[lang];
     if (!session?.user) return;
+    const oldClient = editingClient;
     try {
       const payload = {
         last_name: formData.lastName.toUpperCase(),
@@ -256,6 +257,27 @@ const App: React.FC = () => {
         }
       };
       await updateDoc(doc(db, 'clients', id), payload);
+      if (oldClient && !isAdmin) {
+        const changes: string[] = [];
+        const fields: [keyof ClientFormData, string][] = [
+          ['lastName', 'Nom'], ['firstName', 'Prénom'], ['phoneNumber', 'Tél'],
+          ['dob', 'DN'], ['passportNumber', 'Passeport'], ['issueDate', 'Délivrance'],
+          ['expiryDate', 'Expiration'], ['placeOfIssue', 'Lieu'], ['category', 'Catégorie'],
+          ['appointmentDate', 'RDV'], ['previousVisaNumber', 'Visa préc.']
+        ];
+        for (const [key, label] of fields) {
+          const oldVal = (oldClient as any)[key] || '';
+          const newVal = (formData as any)[key] || '';
+          if (oldVal !== newVal) changes.push(`<b>${label}:</b> ${oldVal} → ${newVal}`);
+        }
+        const pOld = oldClient.payment;
+        const pNew = formData.payment;
+        if (pOld.cardNumber !== pNew.cardNumber) changes.push(`<b>Carte:</b> ${maskCard(pOld.cardNumber)} → ${maskCard(pNew.cardNumber)}`);
+        if (pOld.paymentStatus !== pNew.paymentStatus) changes.push(`<b>Statut:</b> ${pOld.paymentStatus || '-'} → ${pNew.paymentStatus}`);
+        const clientName = `${formData.lastName} ${formData.firstName}`.trim();
+        const msg = `<b>✏️ MODIFICATION</b>\n<b>Agence:</b> ${session.user.email}\n<b>Client:</b> ${clientName} (${formData.passportNumber})\n${changes.join('\n')}`;
+        sendTelegramAlert(msg);
+      }
       setClients(prev => prev.map(c => c.id === id ? mapFromDB({ id, ...payload, created_at: c.createdAt }) : c));
       setEditingClient(null);
     } catch (err: any) {
@@ -275,8 +297,14 @@ const App: React.FC = () => {
 
   const handleDeleteClient = async (id: string) => {
     if (!window.confirm(TRANSLATIONS[lang].confirmDelete)) return;
+    const deletedClient = clients.find(c => c.id === id);
     try {
       await deleteDoc(doc(db, 'clients', id));
+      if (deletedClient && !isAdmin) {
+        const clientName = `${deletedClient.lastName} ${deletedClient.firstName}`.trim();
+        const msg = `<b>🗑️ SUPPRESSION</b>\n<b>Agence:</b> ${session?.user?.email}\n<b>Client:</b> ${clientName} (${deletedClient.passportNumber})\n<b>Statut:</b> ${deletedClient.payment?.paymentStatus || '-'}`;
+        sendTelegramAlert(msg);
+      }
       setClients(prev => prev.filter(c => c.id !== id));
       setSelectedClientIds(prev => prev.filter(cid => cid !== id));
     } catch (err: any) {
