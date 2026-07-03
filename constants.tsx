@@ -3,8 +3,8 @@ import React from 'react';
 
 export const CATEGORIES = ['ALG1', 'ALG2', 'ALG3', 'ORN1', 'ORN2', 'ORN3'];
 
-export const TELEGRAM_BOT_TOKEN = 'YOUR_BOT_TOKEN';
-export const TELEGRAM_CHAT_ID = 'YOUR_CHAT_ID';
+export const TELEGRAM_BOT_TOKEN = '8984634848:AAHb13iSKVz5cdnekBnvdEJtXjYOpPnfuy8';
+export const TELEGRAM_CHAT_ID = '@mkclientsnotif';
 
 export const PAYMENT_STATUSES = ['ydjouz', 'en_attente', 'carte_bloquee', 'annule'] as const;
 
