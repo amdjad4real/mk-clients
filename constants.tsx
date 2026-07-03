@@ -3,6 +3,15 @@ import React from 'react';
 
 export const CATEGORIES = ['ALG1', 'ALG2', 'ALG3', 'ORN1', 'ORN2', 'ORN3'];
 
+export const PAYMENT_STATUSES = ['ydjouz', 'en_attente', 'carte_bloquee', 'annule'] as const;
+
+export const PAYMENT_STATUS_LABELS: Record<string, { en: string; fr: string; ar: string }> = {
+  ydjouz: { en: 'Ydjouz', fr: 'Ydjouz', ar: 'يجوز' },
+  en_attente: { en: 'Pending', fr: 'En attente', ar: 'قيد الانتظار' },
+  carte_bloquee: { en: 'Card blocked', fr: 'Carte bloquée', ar: 'بطاقة محجوبة' },
+  annule: { en: 'Cancelled', fr: 'Annulé', ar: 'ملغي' }
+};
+
 export const TRANSLATIONS = {
   en: {
     appTitle: 'MK Clients',
@@ -57,6 +66,7 @@ export const TRANSLATIONS = {
     confirmDelete: 'Are you sure you want to delete this client?',
     actions: 'Actions',
     payment: 'Payment',
+    paymentStatus: 'Payment Status',
     id: 'ID',
     login: 'Login',
     signup: 'Sign Up',
@@ -180,6 +190,7 @@ export const TRANSLATIONS = {
     confirmDelete: 'Êtes-vous sûr de vouloir supprimer ce client?',
     actions: 'Actions',
     payment: 'Paiement',
+    paymentStatus: 'Statut du Paiement',
     id: 'ID',
     login: 'Connexion',
     signup: 'S\'inscrire',
@@ -302,6 +313,7 @@ export const TRANSLATIONS = {
     confirmDelete: 'هل أنت متأكد من حذف هذا العميل؟',
     actions: 'الإجراءات',
     payment: 'الدفع',
+    paymentStatus: 'حالة الدفع',
     id: 'رقم',
     login: 'تسجيل الدخول',
     signup: 'إنشاء حساب',

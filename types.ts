@@ -29,6 +29,7 @@ export interface Client {
     cardNumber: string; // Store raw for copying
     cvv: string; // Store raw for copying
     cardType: string;
+    paymentStatus: string;
   };
 }
 
@@ -37,6 +38,8 @@ export interface PaymentData {
   cardHolderName: string;
   expiryDate: string;
   cvv: string;
+  cardType: string;
+  paymentStatus: string;
 }
 
 export interface ClientFormData extends Omit<Client, 'id' | 'payment' | 'createdAt' | 'updatedAt' | 'isModified'> {

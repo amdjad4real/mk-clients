@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet, X } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getCardType } from '../utils/helpers';
+import { PAYMENT_STATUS_LABELS } from '../constants';
 
 interface ClientTableProps {
   clients: Client[];
@@ -124,6 +125,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
     let raw = `Last Name: ${client.lastName.toUpperCase()}\n`;
     raw += `First Name: ${client.firstName.toUpperCase()}\n`;
     raw += `Card Type: ${getCardType(p.cardNumber) || 'N/A'}\n`;
+    raw += `Payment Status: ${p.paymentStatus ? (PAYMENT_STATUS_LABELS[p.paymentStatus] as any)?.fr || p.paymentStatus : 'N/A'}\n`;
     raw += `Card Number: ${p.cardNumber || ''}\n`;
     raw += `Card Holder Name: ${(p.cardHolderName || '').toUpperCase()}\n`;
     raw += `Expiry Date: ${p.expiryDate || ''}\n`;
@@ -294,6 +296,16 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                     );
                                   })()}
                                 </div>
+                                {client.payment.paymentStatus && (
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px]">
+                                      {client.payment.paymentStatus === 'ydjouz' ? '🟢' : client.payment.paymentStatus === 'en_attente' ? '🔴' : client.payment.paymentStatus === 'carte_bloquee' ? '🟠' : '⚫'}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                                      {(PAYMENT_STATUS_LABELS[client.payment.paymentStatus] as any)?.[lang] || client.payment.paymentStatus}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="text-[9px] font-bold text-slate-400 uppercase">
                                   EXP: {client.payment.expiryDate || '--'} | CVV: {client.payment.cvv ? '***' : '--'}
                                 </div>

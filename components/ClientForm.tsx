@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, ScanLine, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
-import { CATEGORIES } from '../constants';
+import { CATEGORIES, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS } from '../constants';
 import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate, compressImage, getCardType } from '../utils/helpers';
 
 interface ClientFormProps {
@@ -161,7 +161,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         cardHolderName: '',
         expiryDate: '',
         cvv: '',
-        cardType: ''
+        cardType: '',
+        paymentStatus: ''
       }
   });
 
@@ -192,7 +193,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           cardNumber: initialData.payment?.cardNumber || '',
           cardHolderName: (initialData.payment?.cardHolderName || '').toUpperCase(),
           expiryDate: initialData.payment?.expiryDate || '',
-          cvv: initialData.payment?.cvv || ''
+          cvv: initialData.payment?.cvv || '',
+          cardType: initialData.payment?.cardType || '',
+          paymentStatus: initialData.payment?.paymentStatus || ''
         }
       });
     }
@@ -406,7 +409,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         cardHolderName: '',
         expiryDate: '',
         cvv: '',
-        cardType: ''
+        cardType: '',
+        paymentStatus: ''
       }
     });
     setErrors({});
@@ -605,6 +609,36 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {renderInput(t.cardHolder, 'cardHolderName', 'text', false)}
             {renderInput(t.expiryDate, 'paymentExpiry', 'text', false, 'MM/YYYY')}
             {renderInput(t.cvv, 'cvv', 'text', false, '***')}
+          </div>
+          <div className="mt-4">
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center mb-2">
+              {t.paymentStatus}
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {PAYMENT_STATUSES.map(status => {
+                const label = PAYMENT_STATUS_LABELS[status];
+                const emoji = status === 'ydjouz' ? '🟢' : status === 'en_attente' ? '🔴' : status === 'carte_bloquee' ? '🟠' : '⚫';
+                const isSelected = formData.payment.paymentStatus === status;
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setFormData(prev => ({
+                      ...prev,
+                      payment: { ...prev.payment, paymentStatus: status }
+                    }))}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border-2 ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg scale-105'
+                        : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'
+                    }`}
+                  >
+                    <span className="text-base">{emoji}</span>
+                    {(label as any)[lang]}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 rtl:space-x-reverse pt-6 border-t dark:border-slate-700">

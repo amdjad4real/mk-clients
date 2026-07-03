@@ -99,7 +99,7 @@ const App: React.FC = () => {
     issueDate: dbItem.issue_date,
     expiryDate: dbItem.expiry_date,
     placeOfIssue: dbItem.place_of_issue,
-    payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '', cardType: '' }
+    payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '', cardType: '', paymentStatus: '' }
   });
 
   const fetchAgents = useCallback(async () => {
@@ -201,7 +201,8 @@ const App: React.FC = () => {
           cardHolderName: formData.payment.cardHolderName.toUpperCase(),
           cardNumber: formData.payment.cardNumber,
           cvv: formData.payment.cvv,
-          cardType: getCardType(formData.payment.cardNumber) || ''
+          cardType: getCardType(formData.payment.cardNumber) || '',
+          paymentStatus: formData.payment.paymentStatus || ''
         }
       };
       const docRef = await addDoc(collection(db, 'clients'), payload);
@@ -239,7 +240,8 @@ const App: React.FC = () => {
           cardHolderName: formData.payment.cardHolderName.toUpperCase(),
           cardNumber: formData.payment.cardNumber,
           cvv: formData.payment.cvv,
-          cardType: getCardType(formData.payment.cardNumber) || ''
+          cardType: getCardType(formData.payment.cardNumber) || '',
+          paymentStatus: formData.payment.paymentStatus || ''
         }
       };
       await updateDoc(doc(db, 'clients', id), payload);
