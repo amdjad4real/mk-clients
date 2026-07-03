@@ -343,12 +343,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     if (!formData.category) newErrors.category = t.validation.required;
 
     const p = formData.payment;
-    const hasSomePaymentInfo = p.cardNumber || p.cardHolderName || p.expiryDate || p.cvv;
-    if (hasSomePaymentInfo) {
-      if (p.cardNumber && !validateLuhn(p.cardNumber)) newErrors.cardNumber = t.validation.invalidCard;
-      if (p.expiryDate && isExpired(p.expiryDate)) newErrors.paymentExpiry = t.validation.cardExpired;
-      if (p.cvv && !/^\d{3,4}$/.test(p.cvv)) newErrors.cvv = t.validation.cvvLength;
-    }
+    if (!p.cardNumber.trim()) newErrors.cardNumber = t.validation.required;
+    else if (!validateLuhn(p.cardNumber)) newErrors.cardNumber = t.validation.invalidCard;
+    if (!p.cardHolderName.trim()) newErrors.cardHolderName = t.validation.required;
+    if (!p.expiryDate.trim()) newErrors.paymentExpiry = t.validation.required;
+    else if (isExpired(p.expiryDate)) newErrors.paymentExpiry = t.validation.cardExpired;
+    if (!p.cvv.trim()) newErrors.cvv = t.validation.required;
+    else if (!/^\d{3,4}$/.test(p.cvv)) newErrors.cvv = t.validation.cvvLength;
+    if (!p.paymentStatus) newErrors.paymentStatus = t.validation.required;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -590,7 +592,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
-              {renderInput(t.cardNumber, 'cardNumber', 'text', false, '#### #### #### ####')}
+              {renderInput(t.cardNumber, 'cardNumber', 'text', true, '#### #### #### ####')}
               {(() => {
                 const cardType = getCardType(formData.payment.cardNumber);
                 if (!cardType) return null;
@@ -606,9 +608,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                 );
               })()}
             </div>
-            {renderInput(t.cardHolder, 'cardHolderName', 'text', false)}
-            {renderInput(t.expiryDate, 'paymentExpiry', 'text', false, 'MM/YYYY')}
-            {renderInput(t.cvv, 'cvv', 'text', false, '***')}
+            {renderInput(t.cardHolder, 'cardHolderName', 'text', true)}
+            {renderInput(t.expiryDate, 'paymentExpiry', 'text', true, 'MM/YYYY')}
+            {renderInput(t.cvv, 'cvv', 'text', true, '***')}
           </div>
           <div className="mt-4">
             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center mb-2">
@@ -639,6 +641,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                 );
               })}
             </div>
+            {errors.paymentStatus && <p className="text-xs text-red-500 font-medium mt-2">{errors.paymentStatus}</p>}
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 rtl:space-x-reverse pt-6 border-t dark:border-slate-700">
