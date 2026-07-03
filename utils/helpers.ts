@@ -127,6 +127,20 @@ export const getCardType = (cardNumber: string): 'EDAHABIA' | 'CIB' | null => {
   return 'CIB';
 };
 
+export const sendTelegramAlert = async (message: string) => {
+  const url = (await import('../constants')).TELEGRAM_WORKER_URL;
+  if (!url) return;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+  } catch (err) {
+    console.error('Telegram alert failed:', err);
+  }
+};
+
 export const compressImage = (
   dataUrl: string,
   maxBytes: number = 200 * 1024,
