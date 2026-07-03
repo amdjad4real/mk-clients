@@ -129,15 +129,20 @@ export const getCardType = (cardNumber: string): 'EDAHABIA' | 'CIB' | null => {
 };
 
 export const sendTelegramAlert = async (message: string) => {
-  if (!TELEGRAM_WORKER_URL) return;
+  if (!TELEGRAM_WORKER_URL) {
+    console.warn('[Telegram] No worker URL configured');
+    return;
+  }
   try {
-    await fetch(TELEGRAM_WORKER_URL, {
+    console.log('[Telegram] Sending to', TELEGRAM_WORKER_URL);
+    const resp = await fetch(TELEGRAM_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message })
     });
+    console.log('[Telegram] Response:', resp.status);
   } catch (err) {
-    console.error('Telegram alert failed:', err);
+    console.error('[Telegram] Alert failed:', err);
   }
 };
 
