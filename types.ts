@@ -28,6 +28,7 @@ export interface Client {
     cardHolderName: string;
     cardNumber: string; // Store raw for copying
     cvv: string; // Store raw for copying
+    cardType: string;
   };
 }
 

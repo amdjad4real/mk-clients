@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, ScanLine, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
 import { CATEGORIES } from '../constants';
-import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate, compressImage } from '../utils/helpers';
+import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate, compressImage, getCardType } from '../utils/helpers';
 
 interface ClientFormProps {
   lang: Language;
@@ -156,12 +156,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     category: '',
     appointmentDate: '',
     photoUrl: '',
-    payment: {
-      cardNumber: '',
-      cardHolderName: '',
-      expiryDate: '',
-      cvv: ''
-    }
+      payment: {
+        cardNumber: '',
+        cardHolderName: '',
+        expiryDate: '',
+        cvv: '',
+        cardType: ''
+      }
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -404,7 +405,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         cardNumber: '',
         cardHolderName: '',
         expiryDate: '',
-        cvv: ''
+        cvv: '',
+        cardType: ''
       }
     });
     setErrors({});
@@ -583,7 +585,23 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             <h3 className="text-lg font-bold">{t.paymentDetails}</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {renderInput(t.cardNumber, 'cardNumber', 'text', false, '#### #### #### ####')}
+            <div>
+              {renderInput(t.cardNumber, 'cardNumber', 'text', false, '#### #### #### ####')}
+              {(() => {
+                const cardType = getCardType(formData.payment.cardNumber);
+                if (!cardType) return null;
+                return (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                    <img 
+                      src={cardType === 'EDAHABIA' ? 'https://i.ibb.co/svrGq7Dh/edahabia.jpg' : 'https://i.ibb.co/wr8Bjm20/cib.jpg'} 
+                      alt={cardType}
+                      className="w-6 h-6 rounded object-contain"
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400">{cardType}</span>
+                  </div>
+                );
+              })()}
+            </div>
             {renderInput(t.cardHolder, 'cardHolderName', 'text', false)}
             {renderInput(t.expiryDate, 'paymentExpiry', 'text', false, 'MM/YYYY')}
             {renderInput(t.cvv, 'cvv', 'text', false, '***')}

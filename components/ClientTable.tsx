@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet, X } from 'lucide-react';
 import { Client, Language } from '../types';
+import { getCardType } from '../utils/helpers';
 
 interface ClientTableProps {
   clients: Client[];
@@ -122,6 +123,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
     const p = client.payment;
     let raw = `Last Name: ${client.lastName.toUpperCase()}\n`;
     raw += `First Name: ${client.firstName.toUpperCase()}\n`;
+    raw += `Card Type: ${getCardType(p.cardNumber) || 'N/A'}\n`;
     raw += `Card Number: ${p.cardNumber || ''}\n`;
     raw += `Card Holder Name: ${(p.cardHolderName || '').toUpperCase()}\n`;
     raw += `Expiry Date: ${p.expiryDate || ''}\n`;
@@ -279,6 +281,18 @@ const ClientTable: React.FC<ClientTableProps> = ({
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 text-[11px] font-black text-slate-900 dark:text-white">
                                   <CardIcon className="w-4 h-4 text-amber-500" /> {client.payment.cardMask || '---'}
+                                  {(() => {
+                                    const ct = getCardType(client.payment.cardNumber);
+                                    if (!ct) return null;
+                                    return (
+                                      <img 
+                                        src={ct === 'EDAHABIA' ? 'https://i.ibb.co/svrGq7Dh/edahabia.jpg' : 'https://i.ibb.co/wr8Bjm20/cib.jpg'} 
+                                        alt={ct}
+                                        className="w-5 h-5 rounded object-contain"
+                                        title={ct}
+                                      />
+                                    );
+                                  })()}
                                 </div>
                                 <div className="text-[9px] font-bold text-slate-400 uppercase">
                                   EXP: {client.payment.expiryDate || '--'} | CVV: {client.payment.cvv ? '***' : '--'}

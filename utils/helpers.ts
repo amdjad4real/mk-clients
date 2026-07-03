@@ -119,6 +119,14 @@ export const normalizeToDashDate = (dateStr: string): string => {
   return cleaned;
 };
 
+export const getCardType = (cardNumber: string): 'EDAHABIA' | 'CIB' | null => {
+  const digits = cardNumber.replace(/\D/g, '');
+  if (digits.length < 8) return null;
+  const range = digits.substring(4, 8);
+  if (range === '7030' || range === '7031') return 'EDAHABIA';
+  return 'CIB';
+};
+
 export const compressImage = (
   dataUrl: string,
   maxBytes: number = 200 * 1024,

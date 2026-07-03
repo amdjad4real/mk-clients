@@ -6,7 +6,7 @@ import Navbar from './components/Navbar';
 import ClientForm from './components/ClientForm';
 import ClientTable from './components/ClientTable';
 import Auth from './components/Auth';
-import { maskCard } from './utils/helpers';
+import { maskCard, getCardType } from './utils/helpers';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -99,7 +99,7 @@ const App: React.FC = () => {
     issueDate: dbItem.issue_date,
     expiryDate: dbItem.expiry_date,
     placeOfIssue: dbItem.place_of_issue,
-    payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '' }
+    payment: dbItem.payment || { cardMask: 'N/A', expiryDate: '', cardHolderName: '', cardNumber: '', cvv: '', cardType: '' }
   });
 
   const fetchAgents = useCallback(async () => {
@@ -200,7 +200,8 @@ const App: React.FC = () => {
           expiryDate: formData.payment.expiryDate,
           cardHolderName: formData.payment.cardHolderName.toUpperCase(),
           cardNumber: formData.payment.cardNumber,
-          cvv: formData.payment.cvv
+          cvv: formData.payment.cvv,
+          cardType: getCardType(formData.payment.cardNumber) || ''
         }
       };
       const docRef = await addDoc(collection(db, 'clients'), payload);
@@ -237,7 +238,8 @@ const App: React.FC = () => {
           expiryDate: formData.payment.expiryDate,
           cardHolderName: formData.payment.cardHolderName.toUpperCase(),
           cardNumber: formData.payment.cardNumber,
-          cvv: formData.payment.cvv
+          cvv: formData.payment.cvv,
+          cardType: getCardType(formData.payment.cardNumber) || ''
         }
       };
       await updateDoc(doc(db, 'clients', id), payload);
