@@ -190,7 +190,7 @@ export const TRANSLATIONS = {
     confirmDelete: 'Êtes-vous sûr de vouloir supprimer ce client?',
     actions: 'Actions',
     payment: 'Paiement',
-    paymentStatus: 'Statut du Paiement',
+    paymentStatus: 'Statut du Client',
     id: 'ID',
     login: 'Connexion',
     signup: 'S\'inscrire',
