@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Language, Theme, Client, ClientFormData } from './types';
-import { TRANSLATIONS } from './constants';
+import { TRANSLATIONS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS } from './constants';
 import Navbar from './components/Navbar';
 import ClientForm from './components/ClientForm';
 import ClientTable from './components/ClientTable';
@@ -10,7 +10,7 @@ import { maskCard, getCardType } from './utils/helpers';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
-import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X } from 'lucide-react';
+import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X, CreditCard } from 'lucide-react';
 
 interface Agent {
   id: string;
@@ -40,6 +40,8 @@ const App: React.FC = () => {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [isBulkMode, setIsBulkMode] = useState(false);
+  const [filterPaymentStatus, setFilterPaymentStatus] = useState<string>('');
+  const [filterCardType, setFilterCardType] = useState<string>('');
 
   const initialFetchDone = useRef(false);
   const isAdmin = useMemo(() => session?.user?.email === 'admin@mkservice.com', [session]);
@@ -163,9 +165,18 @@ const App: React.FC = () => {
   }, [clients]);
 
   const filteredClients = useMemo(() => {
-    if (!isAdmin || selectedUserIds.length === 0) return clients;
-    return clients.filter(c => c.user_id && selectedUserIds.includes(c.user_id));
-  }, [clients, selectedUserIds, isAdmin]);
+    let result = clients;
+    if (isAdmin && selectedUserIds.length > 0) {
+      result = result.filter(c => c.user_id && selectedUserIds.includes(c.user_id));
+    }
+    if (filterPaymentStatus) {
+      result = result.filter(c => c.payment?.paymentStatus === filterPaymentStatus);
+    }
+    if (filterCardType) {
+      result = result.filter(c => getCardType(c.payment?.cardNumber || '') === filterCardType);
+    }
+    return result;
+  }, [clients, selectedUserIds, isAdmin, filterPaymentStatus, filterCardType]);
 
   const handleLogout = async () => {
     initialFetchDone.current = false;
@@ -393,6 +404,35 @@ const App: React.FC = () => {
                 </button>
             </div>
             {isAdmin && selectedUserIds.length > 0 && <div className="flex items-center gap-4 bg-indigo-600 text-white px-8 py-3 rounded-2xl text-[11px] font-black uppercase shadow-2xl border border-indigo-400 animate-in slide-in-from-right duration-500"><Filter className="w-5 h-5" />{t.aggregatedView}: {selectedUserIds.length} {t.nodesSelected}</div>}
+          </div>
+          {/* Filter Bar */}
+          <div className="flex flex-wrap items-center gap-4 px-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.paymentStatus}:</span>
+              <button onClick={() => setFilterPaymentStatus('')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${!filterPaymentStatus ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>{t.all}</button>
+              {PAYMENT_STATUSES.map(s => (
+                <button key={s} onClick={() => setFilterPaymentStatus(filterPaymentStatus === s ? '' : s)} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${filterPaymentStatus === s ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                  <span className="text-xs">{s === 'ydjouz' ? '🟢' : s === 'en_attente' ? '🔴' : s === 'carte_bloquee' ? '🟠' : '⚫'}</span>
+                  {(PAYMENT_STATUS_LABELS[s] as any)[lang]}
+                </button>
+              ))}
+            </div>
+            <div className="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><CreditCard className="w-3 h-3 inline mr-1" />{t.cardType}:</span>
+              <button onClick={() => setFilterCardType('')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${!filterCardType ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>{t.all}</button>
+              <button onClick={() => setFilterCardType(filterCardType === 'CIB' ? '' : 'CIB')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${filterCardType === 'CIB' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                <img src="https://i.ibb.co/wr8Bjm20/cib.jpg" alt="" className="w-4 h-4 rounded object-contain" /> CIB
+              </button>
+              <button onClick={() => setFilterCardType(filterCardType === 'EDAHABIA' ? '' : 'EDAHABIA')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${filterCardType === 'EDAHABIA' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                <img src="https://i.ibb.co/svrGq7Dh/edahabia.jpg" alt="" className="w-4 h-4 rounded object-contain" /> EDAHABIA
+              </button>
+            </div>
+            {(filterPaymentStatus || filterCardType) && (
+              <button onClick={() => { setFilterPaymentStatus(''); setFilterCardType(''); }} className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest flex items-center gap-1 ml-auto">
+                <X className="w-3 h-3" /> {t.clearFilters}
+              </button>
+            )}
           </div>
           <ClientTable 
             clients={filteredClients} 
