@@ -1,3 +1,4 @@
+import { TELEGRAM_WORKER_URL } from '../constants';
 
 export const validateLuhn = (cardNumber: string): boolean => {
   const digits = cardNumber.replace(/\D/g, '').split('').map(Number);
@@ -128,10 +129,9 @@ export const getCardType = (cardNumber: string): 'EDAHABIA' | 'CIB' | null => {
 };
 
 export const sendTelegramAlert = async (message: string) => {
-  const url = (await import('../constants')).TELEGRAM_WORKER_URL;
-  if (!url) return;
+  if (!TELEGRAM_WORKER_URL) return;
   try {
-    await fetch(url, {
+    await fetch(TELEGRAM_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message })
