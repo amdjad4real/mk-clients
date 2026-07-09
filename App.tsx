@@ -344,26 +344,31 @@ const App: React.FC = () => {
   const handleCopyAgentClients = (agentId: string) => {
     const agent = agents.find(a => a.id === agentId);
     const agentClients = clients.filter(c => c.user_id === agentId);
-    
-    const grouped: Record<string, Client[]> = {};
+
+    const groupedByStatus: Record<string, Record<string, Client[]>> = {};
     agentClients.forEach(c => {
-      const key = `${c.category} ${c.payment?.paymentStatus || 'unknown'}`;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(c);
+      const status = c.payment?.paymentStatus || 'unknown';
+      const cat = c.category;
+      if (!groupedByStatus[status]) groupedByStatus[status] = {};
+      if (!groupedByStatus[status][cat]) groupedByStatus[status][cat] = [];
+      groupedByStatus[status][cat].push(c);
     });
 
-    const sortedKeys = Object.keys(grouped).sort();
     let text = `📋 Copie des clients - ${agent?.email?.split('@')[0] || agentId}\n`;
     text += `═`.repeat(40) + '\n\n';
-    
-    sortedKeys.forEach(key => {
-      const [cat, status] = key.split(' ');
-      const groupClients = grouped[key];
+
+    const sortedStatuses = Object.keys(groupedByStatus).sort();
+    sortedStatuses.forEach(status => {
       const statusLabel = (PAYMENT_STATUS_LABELS[status] as any)?.[lang] || status;
-      text += `🔹 ${cat} - ${statusLabel}\n`;
+      text += `🔹 ${statusLabel}\n`;
       text += `─`.repeat(30) + '\n';
-      groupClients.forEach(client => {
-        text += `   ${client.lastName} ${client.firstName} | ${client.passportNumber} | ${client.phoneNumber} | ${client.appointmentDate}\n`;
+      const cats = groupedByStatus[status];
+      const sortedCats = Object.keys(cats).sort();
+      sortedCats.forEach(cat => {
+        text += `${cat} :\n`;
+        cats[cat].forEach(client => {
+          text += `   ${client.lastName} ${client.firstName}\n`;
+        });
       });
       text += '\n';
     });
