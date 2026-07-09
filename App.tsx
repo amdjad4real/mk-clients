@@ -388,8 +388,17 @@ const App: React.FC = () => {
   };
 
   const handleCopyGlobal = () => {
-    const text = buildCopyText(clients, 'GLOBAL');
-    navigator.clipboard.writeText(text).then(() => {
+    let fullText = '';
+    agents.forEach((agent, i) => {
+      const agentClients = clients.filter(c => c.user_id === agent.id);
+      if (agentClients.length === 0) return;
+      if (i > 0) fullText += '\n';
+      fullText += buildCopyText(agentClients, agent.email.split('@')[0]);
+    });
+    if (!fullText) {
+      fullText = buildCopyText(clients, 'GLOBAL');
+    }
+    navigator.clipboard.writeText(fullText).then(() => {
       alert(`✅ Copié: ${clients.length} client(s) - Tous les agents`);
     }).catch(() => {
       alert('❌ Échec de la copie');
