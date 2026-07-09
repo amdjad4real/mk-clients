@@ -307,6 +307,15 @@ const App: React.FC = () => {
     }
   };
 
+  const handleUpdateClientType = async (id: string, type: string) => {
+    try {
+      await updateDoc(doc(db, 'clients', id), { type });
+      setClients(prev => prev.map(c => c.id === id ? { ...c, type } : c));
+    } catch (err) {
+      console.error('Failed to update client type:', err);
+    }
+  };
+
   const handleDeleteClient = async (id: string) => {
     if (!window.confirm(TRANSLATIONS[lang].confirmDelete)) return;
     const deletedClient = clients.find(c => c.id === id);
@@ -532,6 +541,7 @@ const App: React.FC = () => {
             onDelete={handleDeleteClient} 
             onConfirmModification={handleConfirmModification}
             onCopy={(c) => { setCopyingClient(c); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onUpdateType={handleUpdateClientType}
             isFetching={isFetchingClients}
             selectedClientIds={selectedClientIds}
             onToggleClientSelect={toggleClientSelection}

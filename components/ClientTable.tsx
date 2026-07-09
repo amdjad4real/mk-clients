@@ -1,9 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet, X } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet, X, ChevronDown } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getCardType } from '../utils/helpers';
-import { PAYMENT_STATUS_LABELS } from '../constants';
+import { PAYMENT_STATUS_LABELS, CLIENT_TYPES } from '../constants';
 
 interface ClientTableProps {
   clients: Client[];
@@ -14,6 +14,7 @@ interface ClientTableProps {
   onDelete: (id: string) => void;
   onConfirmModification?: (id: string) => void;
   onCopy: (c: Client) => void;
+  onUpdateType?: (id: string, type: string) => void;
   isFetching?: boolean;
   selectedClientIds?: string[];
   onToggleClientSelect?: (id: string) => void;
@@ -21,13 +22,14 @@ interface ClientTableProps {
 }
 
 const ClientTable: React.FC<ClientTableProps> = ({ 
-  clients, t, lang, isAdmin, onEdit, onDelete, onConfirmModification, onCopy, isFetching, 
+  clients, t, lang, isAdmin, onEdit, onDelete, onConfirmModification, onCopy, onUpdateType, isFetching, 
   selectedClientIds = [], onToggleClientSelect, onSelectAllVisible 
 }) => {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
+  const [typeDropdownId, setTypeDropdownId] = useState<string | null>(null);
 
   /**
    * CRITICAL FIX: Always group by Registration Date (createdAt)
@@ -268,9 +270,49 @@ const ClientTable: React.FC<ClientTableProps> = ({
                               <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border shadow-sm ${styles.badge}`}>
                                 {client.category}
                               </span>
-                              <span className={`ml-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase border ${client.type === 'famille' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50' : 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800/50'}`}>
-                                {client.type === 'famille' ? 'FAM' : 'IND'}
-                              </span>
+                              {isAdmin ? (
+                                <div className="relative inline-block ml-1.5">
+                                  <button
+                                    onClick={() => setTypeDropdownId(typeDropdownId === client.id ? null : client.id)}
+                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase border cursor-pointer ${
+                                      client.type === 'famille'
+                                        ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50'
+                                        : 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800/50'
+                                    }`}
+                                  >
+                                    {client.type === 'famille' ? 'FAM' : 'IND'}
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                  {typeDropdownId === client.id && (
+                                    <div className="absolute z-50 top-full mt-1 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1 min-w-[90px]">
+                                      {CLIENT_TYPES.map(t => (
+                                        <button
+                                          key={t}
+                                          onClick={() => {
+                                            onUpdateType?.(client.id, t);
+                                            setTypeDropdownId(null);
+                                          }}
+                                          className={`w-full text-left px-3 py-1.5 text-[10px] font-black uppercase transition-colors ${
+                                            client.type === t
+                                              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600'
+                                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                          }`}
+                                        >
+                                          {t === 'famille' ? 'FAM' : 'IND'}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className={`ml-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase border ${
+                                  client.type === 'famille'
+                                    ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50'
+                                    : 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800/50'
+                                }`}>
+                                  {client.type === 'famille' ? 'FAM' : 'IND'}
+                                </span>
+                              )}
                             </td>
                             <td className="px-6 py-5">
                               <div className="flex flex-col gap-1.5">
