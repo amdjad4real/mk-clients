@@ -10,7 +10,7 @@ import { maskCard, getCardType, sendTelegramAlert } from './utils/helpers';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
-import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X, CreditCard } from 'lucide-react';
+import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X, CreditCard, ClipboardCopy } from 'lucide-react';
 
 interface Agent {
   id: string;
@@ -341,6 +341,40 @@ const App: React.FC = () => {
     setSelectedClientIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
+  const handleCopyAgentClients = (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    const agentClients = clients.filter(c => c.user_id === agentId);
+    
+    const grouped: Record<string, Client[]> = {};
+    agentClients.forEach(c => {
+      const key = `${c.category} ${c.payment?.paymentStatus || 'unknown'}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(c);
+    });
+
+    const sortedKeys = Object.keys(grouped).sort();
+    let text = `📋 Copie des clients - ${agent?.email?.split('@')[0] || agentId}\n`;
+    text += `═`.repeat(40) + '\n\n';
+    
+    sortedKeys.forEach(key => {
+      const [cat, status] = key.split(' ');
+      const groupClients = grouped[key];
+      const statusLabel = (PAYMENT_STATUS_LABELS[status] as any)?.[lang] || status;
+      text += `🔹 ${cat} - ${statusLabel}\n`;
+      text += `─`.repeat(30) + '\n';
+      groupClients.forEach(client => {
+        text += `   ${client.lastName} ${client.firstName} | ${client.passportNumber} | ${client.phoneNumber} | ${client.appointmentDate}\n`;
+      });
+      text += '\n';
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`✅ Copié: ${agentClients.length} client(s) pour ${agent?.email?.split('@')[0] || agentId}`);
+    }).catch(() => {
+      alert('❌ Échec de la copie');
+    });
+  };
+
   const handleAgentClick = (agentId: string) => {
     if (isBulkMode) {
       setSelectedUserIds(prev => prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]);
@@ -405,11 +439,20 @@ const App: React.FC = () => {
                 <span className={`px-2 py-1 rounded-lg text-[10px] ${selectedUserIds.length === 0 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600'}`}>{clients.length}</span>
               </button>
               {agents.map((agent) => (
-                <button key={agent.id} onClick={() => handleAgentClick(agent.id)} className={`flex-shrink-0 px-10 py-5 rounded-3xl font-black text-xs uppercase transition-all flex items-center gap-4 border-4 ${selectedUserIds.includes(agent.id) ? 'bg-blue-600 text-white border-blue-400 shadow-[0_20px_40px_rgba(37,99,235,0.3)] scale-105' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-transparent hover:border-slate-300 dark:hover:border-slate-700'}`}>
-                  <div className={`w-3.5 h-3.5 rounded-full ${selectedUserIds.includes(agent.id) ? 'bg-white animate-pulse' : (agentMetrics[agent.id] || 0) > 0 ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
-                  <div className="flex flex-col items-start leading-none"><span>{agent.email.split('@')[0]}</span><span className="text-[8px] mt-1 opacity-60">{agent.email.split('@')[1]}</span></div>
-                  <span className={`px-2 py-1 rounded-lg text-[10px] ${selectedUserIds.includes(agent.id) ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600'}`}>{agentMetrics[agent.id] || 0}</span>
-                </button>
+                <div key={agent.id} className="flex-shrink-0 flex items-center gap-2">
+                  <button onClick={() => handleAgentClick(agent.id)} className={`px-10 py-5 rounded-3xl font-black text-xs uppercase transition-all flex items-center gap-4 border-4 ${selectedUserIds.includes(agent.id) ? 'bg-blue-600 text-white border-blue-400 shadow-[0_20px_40px_rgba(37,99,235,0.3)] scale-105' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-transparent hover:border-slate-300 dark:hover:border-slate-700'}`}>
+                    <div className={`w-3.5 h-3.5 rounded-full ${selectedUserIds.includes(agent.id) ? 'bg-white animate-pulse' : (agentMetrics[agent.id] || 0) > 0 ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
+                    <div className="flex flex-col items-start leading-none"><span>{agent.email.split('@')[0]}</span><span className="text-[8px] mt-1 opacity-60">{agent.email.split('@')[1]}</span></div>
+                    <span className={`px-2 py-1 rounded-lg text-[10px] ${selectedUserIds.includes(agent.id) ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600'}`}>{agentMetrics[agent.id] || 0}</span>
+                  </button>
+                  <button
+                    onClick={() => handleCopyAgentClients(agent.id)}
+                    className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200 dark:border-emerald-800/30"
+                    title="Copier tous les clients"
+                  >
+                    <ClipboardCopy className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
             </div>
           </section>
