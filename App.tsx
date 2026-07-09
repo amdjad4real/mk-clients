@@ -360,10 +360,10 @@ const App: React.FC = () => {
     const groupedByStatus: Record<string, Record<string, Client[]>> = {};
     agentClients.forEach(c => {
       const status = c.payment?.paymentStatus || 'unknown';
-      const cat = c.category;
+      const key = `${c.category}_${c.type || 'indv'}`;
       if (!groupedByStatus[status]) groupedByStatus[status] = {};
-      if (!groupedByStatus[status][cat]) groupedByStatus[status][cat] = [];
-      groupedByStatus[status][cat].push(c);
+      if (!groupedByStatus[status][key]) groupedByStatus[status][key] = [];
+      groupedByStatus[status][key].push(c);
     });
 
     let text = `📋 Copie des clients - ${agent?.email?.split('@')[0] || agentId}\n`;
@@ -375,11 +375,14 @@ const App: React.FC = () => {
       text += `🔹 ${statusLabel}\n`;
       text += `─`.repeat(30) + '\n';
       const cats = groupedByStatus[status];
-      const sortedCats = Object.keys(cats).sort();
-      sortedCats.forEach(cat => {
-        text += `${cat} :\n`;
-        cats[cat].forEach(client => {
-          text += `   ${client.lastName} ${client.firstName} (${client.type === 'famille' ? 'FAM' : 'IND'})\n`;
+      const sortedKeys = Object.keys(cats).sort();
+      sortedKeys.forEach(key => {
+        const [cat, type] = key.split('_');
+        const hasBothTypes = sortedKeys.some(k => k.startsWith(cat + '_') && k !== key);
+        const label = hasBothTypes ? `${cat} ${type === 'famille' ? 'FAMILLE' : 'INDV'} :` : `${cat} :`;
+        text += `${label}\n`;
+        cats[key].forEach(client => {
+          text += `   ${client.lastName} ${client.firstName}\n`;
         });
       });
       text += '\n';
