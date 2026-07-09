@@ -268,6 +268,9 @@ const ClientTable: React.FC<ClientTableProps> = ({
                               <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border shadow-sm ${styles.badge}`}>
                                 {client.category}
                               </span>
+                              <span className={`ml-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase border ${client.type === 'famille' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50' : 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800/50'}`}>
+                                {client.type === 'famille' ? 'FAM' : 'IND'}
+                              </span>
                             </td>
                             <td className="px-6 py-5">
                               <div className="flex flex-col gap-1.5">

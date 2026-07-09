@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, CreditCard, User, ClipboardPaste, ScanLine, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClientFormData, Language } from '../types';
-import { CATEGORIES, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS } from '../constants';
+import { CATEGORIES, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS, CLIENT_TYPES } from '../constants';
 import { validateLuhn, formatCardNumber, formatExpiryDate, isExpired, isValidDate, normalizeToDashDate, compressImage, getCardType } from '../utils/helpers';
 
 interface ClientFormProps {
@@ -154,6 +154,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
     visaFrom: '',
     visaTo: '',
     category: '',
+    type: 'indv',
     appointmentDate: '',
     photoUrl: '',
       payment: {
@@ -187,6 +188,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         visaFrom: initialData.visaFrom || '',
         visaTo: initialData.visaTo || '',
         category: initialData.category || '',
+        type: initialData.type || 'indv',
         appointmentDate: initialData.appointmentDate || '',
         photoUrl: initialData.photoUrl || '',
         payment: {
@@ -404,6 +406,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
       visaFrom: '',
       visaTo: '',
       category: '',
+      type: 'indv',
       appointmentDate: '',
       photoUrl: '',
       payment: {
@@ -578,6 +581,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {renderInput(t.expiryDate, 'expiryDate', 'text', true, 'YYYY-MM-DD')}
             {renderInput(t.placeOfIssue, 'placeOfIssue')}
             {renderInput(t.category, 'category', 'select', true, '', CATEGORIES)}
+            {renderInput(t.type, 'type', 'select', true, '', CLIENT_TYPES)}
             {renderInput(t.appointmentDate, 'appointmentDate', 'text', false, 'YYYY-MM-DD')}
             {renderInput(t.prevVisa, 'previousVisaNumber', 'text', false)}
             {renderInput(t.visaFrom, 'visaFrom', 'text', false, 'YYYY-MM-DD')}

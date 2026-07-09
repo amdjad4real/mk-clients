@@ -3,6 +3,8 @@ import React from 'react';
 
 export const CATEGORIES = ['ALG1', 'ALG2', 'ALG3', 'ORN1', 'ORN2', 'ORN3'];
 
+export const CLIENT_TYPES = ['indv', 'famille'];
+
 export const TELEGRAM_WORKER_URL = 'https://mk-clients-telegram.mkclientstele.workers.dev';
 
 export const PAYMENT_STATUSES = ['ydjouz', 'en_attente', 'carte_bloquee', 'annule'] as const;
@@ -38,6 +40,7 @@ export const TRANSLATIONS = {
     registrationDate: 'Registered On',
     dayStatus: 'Day / Status',
     category: 'Category',
+    type: 'Type',
     select: 'Select...',
     photo: 'Photo',
     register: 'Register Client',
@@ -165,6 +168,7 @@ export const TRANSLATIONS = {
     registrationDate: 'Enregistré le',
     dayStatus: 'Jour / Statut',
     category: 'Catégorie',
+    type: 'Type',
     select: 'Sélectionner...',
     photo: 'Photo',
     register: 'Enregistrer le Client',
@@ -291,6 +295,7 @@ export const TRANSLATIONS = {
     registrationDate: 'تاريخ التسجيل',
     dayStatus: 'اليوم / الحالة',
     category: 'الفئة',
+    type: 'النوع',
     select: 'اختر...',
     photo: 'الصورة',
     register: 'تسجيل العميل',

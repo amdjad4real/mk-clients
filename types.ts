@@ -22,6 +22,7 @@ export interface Client {
   updatedAt: string; // ISO timestamp for modifications
   isModified?: boolean; // Flag for admin review
   user_id?: string; // Ownership field
+  type: string; // 'indv' | 'famille'
   payment: {
     cardMask: string;
     expiryDate: string;
@@ -43,5 +44,6 @@ export interface PaymentData {
 }
 
 export interface ClientFormData extends Omit<Client, 'id' | 'payment' | 'createdAt' | 'updatedAt' | 'isModified'> {
+  payment: PaymentData;
   payment: PaymentData;
 }

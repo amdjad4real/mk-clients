@@ -98,6 +98,7 @@ const App: React.FC = () => {
     updatedAt: dbItem.updated_at || dbItem.created_at,
     isModified: !!dbItem.is_modified,
     user_id: dbItem.user_id,
+    type: dbItem.type || 'indv',
     issueDate: dbItem.issue_date,
     expiryDate: dbItem.expiry_date,
     placeOfIssue: dbItem.place_of_issue,
@@ -203,6 +204,7 @@ const App: React.FC = () => {
         category: formData.category,
         appointment_date: formData.appointmentDate,
         photo_url: formData.photoUrl,
+        type: formData.type,
         is_modified: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -244,6 +246,7 @@ const App: React.FC = () => {
         category: formData.category,
         appointment_date: formData.appointmentDate,
         photo_url: formData.photoUrl,
+        type: formData.type,
         is_modified: true, 
         updated_at: new Date().toISOString(),
         payment: {
@@ -367,7 +370,7 @@ const App: React.FC = () => {
       sortedCats.forEach(cat => {
         text += `${cat} :\n`;
         cats[cat].forEach(client => {
-          text += `   ${client.lastName} ${client.firstName}\n`;
+          text += `   ${client.lastName} ${client.firstName} (${client.type === 'famille' ? 'FAM' : 'IND'})\n`;
         });
       });
       text += '\n';
