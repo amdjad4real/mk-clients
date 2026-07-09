@@ -353,12 +353,9 @@ const App: React.FC = () => {
     setSelectedClientIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const handleCopyAgentClients = (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId);
-    const agentClients = clients.filter(c => c.user_id === agentId);
-
+  const buildCopyText = (clientList: Client[], label: string) => {
     const groupedByStatus: Record<string, Record<string, Client[]>> = {};
-    agentClients.forEach(c => {
+    clientList.forEach(c => {
       const status = c.payment?.paymentStatus || 'unknown';
       const key = `${c.category}_${c.type || 'indv'}`;
       if (!groupedByStatus[status]) groupedByStatus[status] = {};
@@ -366,7 +363,7 @@ const App: React.FC = () => {
       groupedByStatus[status][key].push(c);
     });
 
-    let text = `📋 Copie des clients - ${agent?.email?.split('@')[0] || agentId}\n`;
+    let text = `📋 Copie des clients - ${label}\n`;
     text += `═`.repeat(40) + '\n\n';
 
     const sortedStatuses = Object.keys(groupedByStatus).sort();
@@ -379,15 +376,30 @@ const App: React.FC = () => {
       sortedKeys.forEach(key => {
         const [cat, type] = key.split('_');
         const hasBothTypes = sortedKeys.some(k => k.startsWith(cat + '_') && k !== key);
-        const label = hasBothTypes ? `${cat} ${type === 'famille' ? 'FAMILLE' : 'INDV'} :` : `${cat} :`;
-        text += `${label}\n`;
+        const labelText = hasBothTypes ? `${cat} ${type === 'famille' ? 'FAMILLE' : 'INDV'} :` : `${cat} :`;
+        text += `${labelText}\n`;
         cats[key].forEach(client => {
           text += `   ${client.lastName} ${client.firstName}\n`;
         });
       });
       text += '\n';
     });
+    return text;
+  };
 
+  const handleCopyGlobal = () => {
+    const text = buildCopyText(clients, 'GLOBAL');
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`✅ Copié: ${clients.length} client(s) - Tous les agents`);
+    }).catch(() => {
+      alert('❌ Échec de la copie');
+    });
+  };
+
+  const handleCopyAgentClients = (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    const agentClients = clients.filter(c => c.user_id === agentId);
+    const text = buildCopyText(agentClients, agent?.email?.split('@')[0] || agentId);
     navigator.clipboard.writeText(text).then(() => {
       alert(`✅ Copié: ${agentClients.length} client(s) pour ${agent?.email?.split('@')[0] || agentId}`);
     }).catch(() => {
@@ -457,6 +469,13 @@ const App: React.FC = () => {
                 <div className="p-2 bg-white/10 rounded-xl"><LayoutGrid className="w-6 h-6" /></div>
                 <div className="flex flex-col items-start leading-none"><span>{t.globalPool}</span><span className="text-[8px] mt-1 opacity-60">{t.allRegisteredData}</span></div>
                 <span className={`px-2 py-1 rounded-lg text-[10px] ${selectedUserIds.length === 0 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600'}`}>{clients.length}</span>
+              </button>
+              <button
+                onClick={handleCopyGlobal}
+                className="flex-shrink-0 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200 dark:border-emerald-800/30"
+                title="Copier tous les clients (global)"
+              >
+                <ClipboardCopy className="w-5 h-5" />
               </button>
               {agents.map((agent) => (
                 <div key={agent.id} className="flex-shrink-0 flex items-center gap-2">
