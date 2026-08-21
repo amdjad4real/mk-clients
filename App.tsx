@@ -568,6 +568,7 @@ const App: React.FC = () => {
             t={t} 
             lang={lang} 
             isAdmin={isAdmin}
+            agents={agents}
             onEdit={setEditingClient} 
             onDelete={handleDeleteClient} 
             onConfirmModification={handleConfirmModification}

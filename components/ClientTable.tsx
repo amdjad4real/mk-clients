@@ -1,15 +1,21 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet, X, ChevronDown } from 'lucide-react';
+import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet, X, ChevronDown, Building2 } from 'lucide-react';
 import { Client, Language } from '../types';
 import { getCardType } from '../utils/helpers';
 import { PAYMENT_STATUS_LABELS, CLIENT_TYPES } from '../constants';
+
+interface Agent {
+  id: string;
+  email: string;
+}
 
 interface ClientTableProps {
   clients: Client[];
   t: any;
   lang: Language;
   isAdmin: boolean;
+  agents?: Agent[];
   onEdit: (c: Client) => void;
   onDelete: (id: string) => void;
   onConfirmModification?: (id: string) => void;
@@ -22,7 +28,7 @@ interface ClientTableProps {
 }
 
 const ClientTable: React.FC<ClientTableProps> = ({ 
-  clients, t, lang, isAdmin, onEdit, onDelete, onConfirmModification, onCopy, onUpdateType, isFetching, 
+  clients, t, lang, isAdmin, agents = [], onEdit, onDelete, onConfirmModification, onCopy, onUpdateType, isFetching, 
   selectedClientIds = [], onToggleClientSelect, onSelectAllVisible 
 }) => {
   const [search, setSearch] = useState('');
@@ -30,6 +36,17 @@ const ClientTable: React.FC<ClientTableProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
   const [typeDropdownId, setTypeDropdownId] = useState<string | null>(null);
+
+  const agentMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    agents.forEach(a => { map[a.id] = a.email; });
+    return map;
+  }, [agents]);
+
+  const getAgentEmail = (userId?: string) => {
+    if (!userId) return null;
+    return agentMap[userId] || null;
+  };
 
   /**
    * CRITICAL FIX: Always group by Registration Date (createdAt)
@@ -75,7 +92,8 @@ const ClientTable: React.FC<ClientTableProps> = ({
       const matchesSearch = !searchTerm || 
         c.firstName.toLowerCase().includes(searchTerm) || 
         c.lastName.toLowerCase().includes(searchTerm) || 
-        c.passportNumber.toLowerCase().includes(searchTerm);
+        c.passportNumber.toLowerCase().includes(searchTerm) ||
+        (getAgentEmail(c.user_id)?.toLowerCase().includes(searchTerm) ?? false);
       
       const matchesDate = !dateFilter || regDate === dateFilter;
       
@@ -156,7 +174,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
           <Search className="absolute left-4 rtl:left-auto rtl:right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input 
             type="text" 
-            placeholder={t.search} 
+            placeholder={t.searchAgency || t.search} 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
             className="w-full pl-12 pr-4 rtl:pr-12 rtl:pl-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold transition-all" 
@@ -263,6 +281,11 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 mt-1" title="Registration Time">
                                   <Clock className="w-3 h-3" /> {regTimeStr}
                                 </div>
+                                {isAdmin && getAgentEmail(client.user_id) && (
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-indigo-500 mt-1" title={t.agency || 'Agency'}>
+                                    <Building2 className="w-3 h-3" /> {getAgentEmail(client.user_id)?.split('@')[0]}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-6 py-5 font-black text-slate-800 dark:text-slate-200 tabular-nums tracking-[0.2em]">{client.passportNumber}</td>
