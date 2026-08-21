@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, ArrowRight, ArrowLeft, Loader2, Globe, Sun, Moon } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ArrowLeft, Loader2, Globe, Sun, Moon } from 'lucide-react';
 import { Language, Theme } from '../types';
 import { auth, db } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -90,12 +90,13 @@ const Auth: React.FC<AuthProps> = ({ lang, t, theme, setTheme, setLang }) => {
       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Logo Section */}
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/30 flex items-center justify-center mb-6 transform rotate-3 hover:rotate-0 transition-transform duration-300">
-            <ShieldCheck className="w-10 h-10 text-white" />
+          <div className="mb-6">
+            <img 
+              src={theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'} 
+              alt="MK Clients" 
+              className="h-12 w-auto"
+            />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-            MK <span className="text-blue-600">Clients</span>
-          </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-2">
             Secure Client Management Portal
           </p>

@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { ShieldCheck, Sun, Moon, LogOut, Globe, User, Star, LayoutDashboard } from 'lucide-react';
+import { Sun, Moon, LogOut, Globe, User, Star } from 'lucide-react';
 import { Language, Theme } from '../types';
 
 interface NavbarProps {
@@ -26,10 +26,12 @@ const Navbar: React.FC<NavbarProps> = ({ lang, setLang, theme, setTheme, t, onLo
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           <div className="flex items-center space-x-5 rtl:space-x-reverse">
-            <div className={`p-3 rounded-2xl shadow-lg transition-transform hover:scale-105 ${
-              isAdmin ? 'bg-indigo-600 shadow-indigo-500/40' : 'bg-blue-600 shadow-blue-500/20'
-            }`}>
-              {isAdmin ? <LayoutDashboard className="w-8 h-8 text-white" /> : <ShieldCheck className="w-8 h-8 text-white" />}
+            <div className="flex items-center">
+              <img 
+                src={isAdmin || theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'} 
+                alt="MK Clients" 
+                className="h-10 w-auto"
+              />
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">
