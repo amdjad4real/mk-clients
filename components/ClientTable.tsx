@@ -43,6 +43,29 @@ const ClientTable: React.FC<ClientTableProps> = ({
     return map;
   }, [agents]);
 
+  const agentIndexMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    agents.forEach((a, i) => { map[a.id] = i; });
+    return map;
+  }, [agents]);
+
+  const AGENT_COLORS = [
+    { bg: 'bg-indigo-100 dark:bg-indigo-900/40', text: 'text-indigo-700 dark:text-indigo-300', border: 'border-indigo-200 dark:border-indigo-700', dot: 'bg-indigo-500' },
+    { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-700', dot: 'bg-emerald-500' },
+    { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-700', dot: 'bg-amber-500' },
+    { bg: 'bg-rose-100 dark:bg-rose-900/40', text: 'text-rose-700 dark:text-rose-300', border: 'border-rose-200 dark:border-rose-700', dot: 'bg-rose-500' },
+    { bg: 'bg-cyan-100 dark:bg-cyan-900/40', text: 'text-cyan-700 dark:text-cyan-300', border: 'border-cyan-200 dark:border-cyan-700', dot: 'bg-cyan-500' },
+    { bg: 'bg-violet-100 dark:bg-violet-900/40', text: 'text-violet-700 dark:text-violet-300', border: 'border-violet-200 dark:border-violet-700', dot: 'bg-violet-500' },
+    { bg: 'bg-pink-100 dark:bg-pink-900/40', text: 'text-pink-700 dark:text-pink-300', border: 'border-pink-200 dark:border-pink-700', dot: 'bg-pink-500' },
+    { bg: 'bg-teal-100 dark:bg-teal-900/40', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-200 dark:border-teal-700', dot: 'bg-teal-500' },
+  ];
+
+  const getAgentColor = (userId?: string) => {
+    if (!userId) return AGENT_COLORS[0];
+    const idx = agentIndexMap[userId] ?? 0;
+    return AGENT_COLORS[idx % AGENT_COLORS.length];
+  };
+
   const getAgentEmail = (userId?: string) => {
     if (!userId) return null;
     return agentMap[userId] || null;
@@ -281,11 +304,17 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 mt-1" title="Registration Time">
                                   <Clock className="w-3 h-3" /> {regTimeStr}
                                 </div>
-                                {isAdmin && getAgentEmail(client.user_id) && (
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-indigo-500 mt-1" title={t.agency || 'Agency'}>
-                                    <Building2 className="w-3 h-3" /> {getAgentEmail(client.user_id)?.split('@')[0]}
-                                  </div>
-                                )}
+                                {isAdmin && getAgentEmail(client.user_id) && (() => {
+                                  const color = getAgentColor(client.user_id);
+                                  return (
+                                    <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg border ${color.bg} ${color.border}`} title={t.agency || 'Agency'}>
+                                      <span className={`w-2 h-2 rounded-full ${color.dot}`}></span>
+                                      <span className={`text-[10px] font-black uppercase tracking-widest ${color.text}`}>
+                                        {getAgentEmail(client.user_id)?.split('@')[0]}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </td>
                             <td className="px-6 py-5 font-black text-slate-800 dark:text-slate-200 tabular-nums tracking-[0.2em]">{client.passportNumber}</td>
