@@ -1,4 +1,25 @@
 import { TELEGRAM_WORKER_URL } from '../constants';
+import { Client } from '../types';
+
+export const buildPassportFields = (client: Client): string[] => [
+  `Nom (Surname) : ${(client.lastName || '').toUpperCase()}`,
+  `Prénoms (Given names) : ${(client.firstName || '').toUpperCase()}`,
+  `Date de naissance : ${client.dob || ''}`,
+  `Numéro de passeport : ${client.passportNumber || ''}`,
+  `Date de délivrance : ${client.issueDate || ''}`,
+  `Date d'expiration : ${client.expiryDate || ''}`,
+  `Place : ${(client.placeOfIssue || '').toUpperCase()}`
+];
+
+export const buildPassportText = (client: Client): string => {
+  const f = buildPassportFields(client);
+  return `${f[0]}\n${f[1]}\n${f[2]}\n\n${f[3]}\n\n${f[4]}\n\n${f[5]}\n\n${f[6]}`;
+};
+
+export const buildBulkPassportText = (clients: Client[]): string =>
+  clients
+    .map((client, i) => `**Passeport ${i + 1} :**\n${buildPassportFields(client).join('\n')}`)
+    .join('\n\n---\n\n');
 
 export const validateLuhn = (cardNumber: string): boolean => {
   const digits = cardNumber.replace(/\D/g, '').split('').map(Number);

@@ -6,11 +6,11 @@ import Navbar from './components/Navbar';
 import ClientForm from './components/ClientForm';
 import ClientTable from './components/ClientTable';
 import Auth from './components/Auth';
-import { maskCard, getCardType, sendTelegramAlert } from './utils/helpers';
+import { maskCard, getCardType, sendTelegramAlert, buildBulkPassportText } from './utils/helpers';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
-import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X, CreditCard, ClipboardCopy } from 'lucide-react';
+import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X, CreditCard, ClipboardCopy, Check } from 'lucide-react';
 
 interface Agent {
   id: string;
@@ -39,6 +39,7 @@ const App: React.FC = () => {
   
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+  const [isBulkCopied, setIsBulkCopied] = useState(false);
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [filterPaymentStatus, setFilterPaymentStatus] = useState<string>('');
   const [filterCardType, setFilterCardType] = useState<string>('');
@@ -353,6 +354,19 @@ const App: React.FC = () => {
     setSelectedClientIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
+  const handleCopySelectedPassports = () => {
+    const selected = selectedClientIds
+      .map(id => clients.find(c => c.id === id))
+      .filter((c): c is Client => !!c);
+    if (selected.length === 0) return;
+    navigator.clipboard.writeText(buildBulkPassportText(selected)).then(() => {
+      setIsBulkCopied(true);
+      setTimeout(() => setIsBulkCopied(false), 2000);
+    }).catch(() => {
+      alert('❌ Échec de la copie');
+    });
+  };
+
   const buildCopyText = (clientList: Client[], label: string) => {
     const groupedByStatus: Record<string, Record<string, Client[]>> = {};
     clientList.forEach(c => {
@@ -597,10 +611,19 @@ const App: React.FC = () => {
                 </button>
               </div>
             </div>
-            <button onClick={handleBulkDelete} className="px-12 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-red-600/30 transition-all flex items-center gap-4 active:scale-95 group">
-              <Trash2 className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              {t.deleteSelected}
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleCopySelectedPassports}
+                className={`px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl transition-all flex items-center gap-4 active:scale-95 group ${isBulkCopied ? 'bg-emerald-600 text-white shadow-emerald-600/30' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'}`}
+              >
+                {isBulkCopied ? <Check className="w-5 h-5" /> : <ClipboardCopy className="w-5 h-5 group-hover:rotate-12 transition-transform" />}
+                {t.copy}
+              </button>
+              <button onClick={handleBulkDelete} className="px-12 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-red-600/30 transition-all flex items-center gap-4 active:scale-95 group">
+                <Trash2 className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                {t.deleteSelected}
+              </button>
+            </div>
           </div>
         </div>
       )}

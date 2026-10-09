@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, RefreshCcw, Edit, Copy, Trash2, User, Check, CreditCard, Calendar as CalendarIcon, Tag, Clock, Plane, CreditCard as CardIcon, Database, CheckSquare, Square, CheckCircle, ShieldAlert, FileText, Wallet, X, ChevronDown, Building2 } from 'lucide-react';
 import { Client, Language } from '../types';
-import { getCardType } from '../utils/helpers';
+import { getCardType, buildPassportText } from '../utils/helpers';
 import { PAYMENT_STATUS_LABELS, CLIENT_TYPES } from '../constants';
 
 interface Agent {
@@ -142,20 +142,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
   }, [filteredVisibleClients]);
 
   const handleCopyClientDetails = (client: Client) => {
-    let raw = `Last Name: ${client.lastName.toUpperCase()}\n`;
-    raw += `First Name: ${client.firstName.toUpperCase()}\n`;
-    raw += `Date of Birth: ${client.dob}\n`;
-    raw += `Passport Number: ${client.passportNumber}\n`;
-    raw += `Issue Date: ${client.issueDate}\n`;
-    raw += `Expiry Date: ${client.expiryDate}\n`;
-    raw += `Place of Issue: ${client.placeOfIssue.toUpperCase()}\n`;
-    raw += `Category: ${client.category}`;
-
-    if (client.previousVisaNumber || client.visaFrom || client.visaTo) {
-      raw += `\nPrevious Visa Number: ${client.previousVisaNumber || ''}\n`;
-      raw += `Visa Valid From: ${client.visaFrom || ''}\n`;
-      raw += `Visa Valid To: ${client.visaTo || ''}`;
-    }
+    const raw = buildPassportText(client);
 
     navigator.clipboard.writeText(raw).then(() => {
       setCopiedId(client.id);
