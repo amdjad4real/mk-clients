@@ -528,6 +528,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                 })}
               </div>
             </div>
+            </div>
           ))
         ) : (
           <div className="text-center py-20 sm:py-40 bg-white dark:bg-slate-800 rounded-[32px] sm:rounded-[48px] border-4 border-dashed border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center px-4">
