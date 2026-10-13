@@ -430,6 +430,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                     </tbody>
                   </table>
                 </div>
+              </div>
               {/* Mobile Card Layout - Hidden on Desktop */}
               <div className="block md:hidden space-y-3">
                 {groupedClients[dateKey].map((client) => {
@@ -527,7 +528,6 @@ const ClientTable: React.FC<ClientTableProps> = ({
                   );
                 })}
               </div>
-            </div>
             </div>
           ))
         ) : (
