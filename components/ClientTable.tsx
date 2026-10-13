@@ -177,32 +177,32 @@ const ClientTable: React.FC<ClientTableProps> = ({
   const sortedGroupKeys = Object.keys(groupedClients).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Search and Fixed Registration Date Filter */}
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 flex flex-col md:flex-row gap-5">
-        <div className="relative flex-1">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 p-3 md:p-5 flex flex-col md:flex-row gap-3 md:gap-5">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-4 rtl:left-auto rtl:right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input 
             type="text" 
             placeholder={t.searchAgency || t.search} 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
-            className="w-full pl-12 pr-4 rtl:pr-12 rtl:pl-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold transition-all" 
+            className="w-full pl-12 pr-4 rtl:pr-12 rtl:pl-4 py-3 md:py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold transition-all text-sm md:text-base" 
           />
         </div>
-        <div className="flex gap-3">
-          <div className="relative min-w-[220px]">
+        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-2 md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
+          <div className="relative min-w-[180px] md:min-w-[220px]">
             <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500 z-10 pointer-events-none" />
             <input 
               type="date" 
               value={dateFilter} 
               onChange={(e) => setDateFilter(e.target.value)} 
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-indigo-500 dark:border-slate-700 bg-indigo-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/20 outline-none font-black transition-all hover:border-indigo-600 shadow-sm" 
+              className="w-full pl-12 pr-4 py-3 md:py-3.5 rounded-2xl border-2 border-indigo-500 dark:border-slate-700 bg-indigo-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/20 outline-none font-black transition-all hover:border-indigo-600 shadow-sm text-sm md:text-base" 
             />
           </div>
           <button 
             onClick={() => { setSearch(''); setDateFilter(''); }} 
-            className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-all active:scale-95 shadow-sm border border-slate-200 dark:border-slate-600"
+            className="flex-shrink-0 p-3 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-all active:scale-95 shadow-sm border border-slate-200 dark:border-slate-600 min-w-[48px] min-h-[48px] flex items-center justify-center"
             title={t.clearFilters}
           >
             <RefreshCcw className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -210,20 +210,22 @@ const ClientTable: React.FC<ClientTableProps> = ({
         </div>
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-6 md:space-y-10">
         {!isFetching && sortedGroupKeys.length > 0 ? (
           sortedGroupKeys.map(dateKey => (
             <div key={dateKey} className="space-y-4">
-              <div className="flex items-center gap-6 px-4">
+              <div className="flex items-center gap-2 sm:gap-3 md:gap-6 px-2 sm:px-3 md:px-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
-                <h3 className="text-sm font-black text-slate-500 flex items-center gap-3">
-                  <Tag className="w-4 h-4 text-indigo-500" />
-                  {formatDisplayDate(dateKey)}
-                  <span className="bg-indigo-600 text-white px-3 py-1 rounded-xl text-[10px] shadow-lg tracking-normal uppercase">{groupedClients[dateKey].length} {t.files}</span>
+                <h3 className="text-[10px] sm:text-xs md:text-sm font-black text-slate-500 flex items-center gap-1.5 sm:gap-2 md:gap-3 truncate min-w-0">
+                  <Tag className="w-3 h-3 md:w-4 md:h-4 text-indigo-500 flex-shrink-0" />
+                  <span className="truncate">{formatDisplayDate(dateKey)}</span>
+                  <span className="bg-indigo-600 text-white px-1.5 sm:px-2 md:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] shadow-lg tracking-normal uppercase flex-shrink-0">{groupedClients[dateKey].length} {t.files}</span>
                 </h3>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
               </div>
-              <div className="bg-white dark:bg-slate-800 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-700/50 overflow-hidden">
+              
+              {/* Desktop Table - Hidden on Mobile */}
+              <div className="hidden md:block bg-white dark:bg-slate-800 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-700/50 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left rtl:text-right">
                     <thead>
@@ -428,14 +430,110 @@ const ClientTable: React.FC<ClientTableProps> = ({
                     </tbody>
                   </table>
                 </div>
+              {/* Mobile Card Layout - Hidden on Desktop */}
+              <div className="block md:hidden space-y-3">
+                {groupedClients[dateKey].map((client) => {
+                  const isModified = isAdmin && client.isModified;
+                  const styles = getCategoryStyles(client.category);
+                  const isSelected = selectedClientIds.includes(client.id);
+                  const regTime = new Date(client.createdAt);
+                  const regTimeStr = regTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  const modTime = new Date(client.updatedAt);
+                  const modTimeStr = modTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  const ct = getCardType(client.payment.cardNumber);
+                  const agentEmail = getAgentEmail(client.user_id);
+                  const agentColor = getAgentColor(client.user_id);
+
+                  return (
+                    <div key={client.id} className={`bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700/50 p-4 ${isModified ? 'ring-2 ring-red-500/30 animate-pulse' : ''}`}>
+                      <div className="flex items-start gap-3">
+                        <button onClick={() => onToggleClientSelect?.(client.id)} className={`min-w-[44px] min-h-[44px] flex items-center justify-center ${isSelected ? 'text-indigo-600' : 'text-slate-300 dark:text-slate-600'} transition-all`}>
+                          {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                        </button>
+                        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center border-2 border-slate-100 dark:border-slate-700 shadow-md flex-shrink-0">
+                          {client.photoUrl ? <img src={client.photoUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-7 h-7 text-slate-300" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-sm font-black uppercase tracking-tighter text-slate-900 dark:text-white truncate">{client.firstName} {client.lastName}</h4>
+                              <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 mt-0.5">
+                                <Clock className="w-3 h-3" /> {regTimeStr}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase border shadow-sm ${styles.badge}`}>
+                                {client.category}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border ${client.type === 'famille' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50' : 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800/50'}`}>
+                                {client.type === 'famille' ? 'FAM' : 'IND'}
+                              </span>
+                            </div>
+                          </div>
+                          {isModified && (
+                            <div className="mt-2 flex items-center gap-2 px-2 py-1 bg-red-600 text-white text-[8px] font-black rounded-lg shadow-sm">
+                              <ShieldAlert className="w-2.5 h-2.5" /> {t.updated} • {modTimeStr}
+                              {onConfirmModification && (
+                                <button onClick={() => onConfirmModification(client.id)} className="ml-1 p-0.5 bg-white/20 rounded min-h-[28px] min-w-[28px] flex items-center justify-center">
+                                  <CheckCircle className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {isAdmin && agentEmail && (
+                            <div className={`inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-lg border ${agentColor.bg} ${agentColor.border}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${agentColor.dot}`}></span>
+                              <span className={`text-[9px] font-black uppercase ${agentColor.text}`}>{agentEmail.split('@')[0]}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                        <div className="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                          <span className="text-slate-400 font-bold uppercase">Passport</span>
+                          <span className="font-black text-slate-900 dark:text-white tracking-wide">{client.passportNumber}</span>
+                        </div>
+                        <div className="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                          <span className="text-slate-400 font-bold uppercase">Card</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-slate-900 dark:text-white">{client.payment.cardMask || '---'}</span>
+                            {ct && <img src={ct === 'EDAHABIA' ? 'https://i.ibb.co/svrGq7Dh/edahabia.jpg' : 'https://i.ibb.co/wr8Bjm20/cib.jpg'} alt={ct} className="w-4 h-4 rounded object-contain" />}
+                          </div>
+                          {client.payment.paymentStatus && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span>{client.payment.paymentStatus === 'ydjouz' ? '🟢' : client.payment.paymentStatus === 'en_attente' ? '🔴' : client.payment.paymentStatus === 'carte_bloquee' ? '🟠' : '⚫'}</span>
+                              <span className="text-[8px] font-bold uppercase text-slate-500">{(PAYMENT_STATUS_LABELS[client.payment.paymentStatus] as any)?.[lang]}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button onClick={() => onEdit(client)} className="min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-xl font-bold text-xs uppercase transition-all hover:bg-blue-600 hover:text-white">
+                          <Edit className="w-4 h-4" /> {t.edit}
+                        </button>
+                        <button onClick={() => handleCopyClientDetails(client)} className={`min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs uppercase transition-all ${copiedId === client.id ? 'bg-emerald-600 text-white' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-600 hover:text-white'}`}>
+                          {copiedId === client.id ? <Check className="w-4 h-4" /> : <FileText className="w-4 h-4" />} {t.copy}
+                        </button>
+                        <button onClick={() => handleCopyPaymentDetails(client)} className={`min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs uppercase transition-all ${copiedPaymentId === client.id ? 'bg-amber-600 text-white' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 hover:bg-amber-600 hover:text-white'}`}>
+                          {copiedPaymentId === client.id ? <Check className="w-4 h-4" /> : <Wallet className="w-4 h-4" />} {t.copyPayment}
+                        </button>
+                        <button onClick={() => onDelete(client.id)} className="min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 rounded-xl font-bold text-xs uppercase transition-all hover:bg-red-600 hover:text-white">
+                          <Trash2 className="w-4 h-4" /> {t.delete}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-40 bg-white dark:bg-slate-800 rounded-[48px] border-4 border-dashed border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center">
-            <div className="p-10 bg-slate-50 dark:bg-slate-900/50 rounded-full mb-8"><Database className="w-20 h-20 text-slate-200" /></div>
-            <h4 className="text-2xl font-black uppercase text-slate-900 dark:text-white mb-2">{t.noRecordsFound}</h4>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{clients.length === 0 ? t.emptyPool : t.filterNoMatch}</p>
+          <div className="text-center py-20 sm:py-40 bg-white dark:bg-slate-800 rounded-[32px] sm:rounded-[48px] border-4 border-dashed border-slate-100 dark:border-slate-700/50 flex flex-col items-center justify-center px-4">
+            <div className="p-6 sm:p-10 bg-slate-50 dark:bg-slate-900/50 rounded-full mb-6 sm:mb-8"><Database className="w-12 h-12 sm:w-20 sm:h-20 text-slate-200" /></div>
+            <h4 className="text-lg sm:text-2xl font-black uppercase text-slate-900 dark:text-white mb-2">{t.noRecordsFound}</h4>
+            <p className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest text-center">{clients.length === 0 ? t.emptyPool : t.filterNoMatch}</p>
           </div>
         )}
       </div>

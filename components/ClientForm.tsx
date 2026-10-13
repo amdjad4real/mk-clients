@@ -538,13 +538,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           </button>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+      <form onSubmit={handleSubmit} className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
         <div className="space-y-6">
           <div className="flex items-center space-x-2 rtl:space-x-reverse border-b dark:border-slate-700 pb-2">
             <User className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-bold">{t.clientDetails}</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="lg:row-span-2 flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50">
               <div className="relative w-32 h-32 rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center mb-4">
                 {formData.photoUrl ? (
@@ -594,7 +594,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             <CreditCard className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-bold">{t.paymentDetails}</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <div>
               {renderInput(t.cardNumber, 'cardNumber', 'text', true, '#### #### #### ####')}
               {(() => {
@@ -616,11 +616,11 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {renderInput(t.expiryDate, 'paymentExpiry', 'text', true, 'MM/YYYY')}
             {renderInput(t.cvv, 'cvv', 'text', true, '***')}
           </div>
-          <div className="mt-4">
+            <div className="mt-4">
             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center mb-2">
               {t.paymentStatus}
             </label>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {PAYMENT_STATUSES.map(status => {
                 const label = PAYMENT_STATUS_LABELS[status];
                 const emoji = status === 'ydjouz' ? '🟢' : status === 'en_attente' ? '🔴' : status === 'carte_bloquee' ? '🟠' : '⚫';
@@ -633,14 +633,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
                       ...prev,
                       payment: { ...prev.payment, paymentStatus: status }
                     }))}
-                    className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border-2 ${
+                    className={`flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 min-h-[44px] rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border-2 ${
                       isSelected
                         ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg scale-105'
                         : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'
                     }`}
                   >
                     <span className="text-base">{emoji}</span>
-                    {(label as any)[lang]}
+                    <span className="truncate">{(label as any)[lang]}</span>
                   </button>
                 );
               })}
@@ -648,12 +648,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
             {errors.paymentStatus && <p className="text-xs text-red-500 font-medium mt-2">{errors.paymentStatus}</p>}
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 rtl:space-x-reverse pt-6 border-t dark:border-slate-700">
+        <div className="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 rtl:space-x-reverse pt-6 border-t dark:border-slate-700 sticky bottom-0 bg-white dark:bg-slate-800 sm:bg-transparent sm:dark:bg-transparent -mx-4 sm:mx-0 px-4 sm:px-0 pb-4 sm:pb-0 mt-6 sm:mt-0">
           <button 
             type="button" 
             onClick={handleClear} 
             disabled={isSubmitting}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+            className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-lg font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
           >
             {t.clear}
           </button>
@@ -662,7 +662,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
               type="button" 
               onClick={onCancel} 
               disabled={isSubmitting}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-lg font-bold border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
               {t.cancel}
             </button>
@@ -670,7 +670,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full sm:w-auto px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto min-h-[44px] px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>

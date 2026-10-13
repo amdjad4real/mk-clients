@@ -451,10 +451,10 @@ const App: React.FC = () => {
   if (!session) return <Auth lang={lang} t={t} theme={theme} setTheme={setTheme} setLang={setLang} />;
 
   return (
-    <div className={`min-h-screen ${isAdmin ? 'bg-slate-100 dark:bg-[#0a0f1c]' : 'bg-slate-50 dark:bg-slate-900'} text-slate-900 dark:text-slate-100 pb-32 transition-colors duration-200`}>
+    <div className={`min-h-screen ${isAdmin ? 'bg-slate-100 dark:bg-[#0a0f1c]' : 'bg-slate-50 dark:bg-slate-900'} text-slate-900 dark:text-slate-100 pb-20 sm:pb-32 transition-colors duration-200`}>
       <Navbar lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} t={t} onLogout={handleLogout} userEmail={session.user.email || ''} />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 mt-4 sm:mt-6 md:mt-8 space-y-6 sm:space-y-8">
         
         {isAdmin && (
           <section className="bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-2xl border border-blue-100 dark:border-blue-900/20 relative group overflow-hidden">
@@ -487,7 +487,7 @@ const App: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-5 overflow-x-auto pb-6 scrollbar-hide no-scrollbar relative z-10 px-2">
+            <div className="flex items-center gap-5 overflow-x-auto pb-6 no-scrollbar custom-scrollbar relative z-10 px-2 [-webkit-overflow-scrolling:touch] touch-pan-x">
               <button onClick={() => setSelectedUserIds([])} className={`flex-shrink-0 px-10 py-5 rounded-3xl font-black text-xs uppercase transition-all flex items-center gap-4 border-4 ${selectedUserIds.length === 0 ? 'bg-indigo-600 text-white border-indigo-400 shadow-[0_20px_40px_rgba(79,70,229,0.3)] scale-105' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-transparent hover:border-slate-300 dark:hover:border-slate-700'}`}>
                 <div className="p-2 bg-white/10 rounded-xl"><LayoutGrid className="w-6 h-6" /></div>
                 <div className="flex flex-col items-start leading-none"><span>{t.globalPool}</span><span className="text-[8px] mt-1 opacity-60">{t.allRegisteredData}</span></div>
@@ -521,12 +521,15 @@ const App: React.FC = () => {
         )}
 
         <section className="space-y-4">
-          <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-6 rounded-[32px] shadow-xl border border-slate-200 dark:border-slate-700">
-             <div className="flex items-center gap-5">
-               <div className={`p-4 rounded-[22px] ${isAdmin ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'} shadow-lg`}><Plus className="w-8 h-8" /></div>
-               <div><h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 dark:text-white leading-none">{t.addNewClient}</h2><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2.5">{t.dataEntryNode}</p></div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-xl border border-slate-200 dark:border-slate-700">
+             <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto">
+               <div className={`p-3 sm:p-4 rounded-[16px] sm:rounded-[22px] ${isAdmin ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'} shadow-lg`}><Plus className="w-6 h-6 sm:w-8 sm:h-8" /></div>
+               <div className="flex-1 min-w-0">
+                 <h2 className="text-lg sm:text-2xl font-black uppercase tracking-tighter text-slate-900 dark:text-white leading-none truncate">{t.addNewClient}</h2>
+                 <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] sm:tracking-[0.3em] mt-1.5 sm:mt-2.5 truncate">{t.dataEntryNode}</p>
+               </div>
              </div>
-             <button onClick={() => setIsFormOpen(!isFormOpen)} className={`px-12 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all border-b-4 active:border-b-0 active:translate-y-1 ${isFormOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600' : 'bg-indigo-600 text-white border-indigo-800 hover:bg-indigo-700 shadow-2xl'}`}>
+             <button onClick={() => setIsFormOpen(!isFormOpen)} className={`w-full sm:w-auto px-6 sm:px-12 py-3 sm:py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all border-b-4 active:border-b-0 active:translate-y-1 ${isFormOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600' : 'bg-indigo-600 text-white border-indigo-800 hover:bg-indigo-700 shadow-2xl'}`}>
                {isFormOpen ? t.deactivateTerminal : t.activateTerminal}
              </button>
           </div>
@@ -534,45 +537,49 @@ const App: React.FC = () => {
         </section>
 
         <section className="space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 px-3">
-            <div className="flex items-center gap-5">
-                <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">{t.registeredClients}</h2>
-                {isFetchingClients && <div className="w-7 h-7 border-[5px] border-indigo-600 border-t-transparent rounded-full animate-spin"></div>}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-5 px-2 sm:px-3">
+            <div className="flex items-center gap-3 sm:gap-5 w-full md:w-auto">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tighter text-slate-900 dark:text-white truncate">{t.registeredClients}</h2>
+                {isFetchingClients && <div className="w-6 h-6 sm:w-7 sm:h-7 border-[3px] sm:border-[5px] border-indigo-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>}
                 <button 
                   onClick={() => fetchClients(true)} 
-                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600 transition-all shadow-sm border border-slate-200 dark:border-slate-700"
+                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600 transition-all shadow-sm border border-slate-200 dark:border-slate-700 flex-shrink-0"
                   title={t.refresh}
                 >
                   <RefreshCw className={`w-4 h-4 ${isFetchingClients ? 'animate-spin' : ''}`} />
                 </button>
             </div>
-            {isAdmin && selectedUserIds.length > 0 && <div className="flex items-center gap-4 bg-indigo-600 text-white px-8 py-3 rounded-2xl text-[11px] font-black uppercase shadow-2xl border border-indigo-400 animate-in slide-in-from-right duration-500"><Filter className="w-5 h-5" />{t.aggregatedView}: {selectedUserIds.length} {t.nodesSelected}</div>}
+            {isAdmin && selectedUserIds.length > 0 && <div className="flex items-center gap-3 sm:gap-4 bg-indigo-600 text-white px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-2xl text-[9px] sm:text-[11px] font-black uppercase shadow-2xl border border-indigo-400 animate-in slide-in-from-right duration-500 w-full md:w-auto justify-center"><Filter className="w-4 h-4 sm:w-5 sm:h-5" />{t.aggregatedView}: {selectedUserIds.length} {t.nodesSelected}</div>}
           </div>
           {/* Filter Bar */}
-          <div className="flex flex-wrap items-center gap-4 px-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col lg:flex-row lg:flex-wrap items-start lg:items-center gap-3 lg:gap-4 px-2 sm:px-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.paymentStatus}:</span>
-              <button onClick={() => setFilterPaymentStatus('')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${!filterPaymentStatus ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>{t.all}</button>
-              {PAYMENT_STATUSES.map(s => (
-                <button key={s} onClick={() => setFilterPaymentStatus(filterPaymentStatus === s ? '' : s)} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${filterPaymentStatus === s ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                  <span className="text-xs">{s === 'ydjouz' ? '🟢' : s === 'en_attente' ? '🔴' : s === 'carte_bloquee' ? '🟠' : '⚫'}</span>
-                  {(PAYMENT_STATUS_LABELS[s] as any)[lang]}
-                </button>
-              ))}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+                <button onClick={() => setFilterPaymentStatus('')} className={`px-3 py-2 min-h-[44px] sm:min-h-[auto] sm:py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex-1 sm:flex-initial ${!filterPaymentStatus ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>{t.all}</button>
+                {PAYMENT_STATUSES.map(s => (
+                  <button key={s} onClick={() => setFilterPaymentStatus(filterPaymentStatus === s ? '' : s)} className={`px-3 py-2 min-h-[44px] sm:min-h-[auto] sm:py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 flex-1 sm:flex-initial ${filterPaymentStatus === s ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                    <span className="text-xs">{s === 'ydjouz' ? '🟢' : s === 'en_attente' ? '🔴' : s === 'carte_bloquee' ? '🟠' : '⚫'}</span>
+                    {(PAYMENT_STATUS_LABELS[s] as any)[lang]}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
-            <div className="flex items-center gap-2">
+            <div className="hidden lg:block w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><CreditCard className="w-3 h-3 inline mr-1" />{t.cardType}:</span>
-              <button onClick={() => setFilterCardType('')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${!filterCardType ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>{t.all}</button>
-              <button onClick={() => setFilterCardType(filterCardType === 'CIB' ? '' : 'CIB')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${filterCardType === 'CIB' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                <img src="https://i.ibb.co/wr8Bjm20/cib.jpg" alt="" className="w-4 h-4 rounded object-contain" /> CIB
-              </button>
-              <button onClick={() => setFilterCardType(filterCardType === 'EDAHABIA' ? '' : 'EDAHABIA')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${filterCardType === 'EDAHABIA' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                <img src="https://i.ibb.co/svrGq7Dh/edahabia.jpg" alt="" className="w-4 h-4 rounded object-contain" /> EDAHABIA
-              </button>
+              <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+                <button onClick={() => setFilterCardType('')} className={`px-3 py-2 min-h-[44px] sm:min-h-[auto] sm:py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex-1 sm:flex-initial ${!filterCardType ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>{t.all}</button>
+                <button onClick={() => setFilterCardType(filterCardType === 'CIB' ? '' : 'CIB')} className={`px-3 py-2 min-h-[44px] sm:min-h-[auto] sm:py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 flex-1 sm:flex-initial ${filterCardType === 'CIB' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                  <img src="https://i.ibb.co/wr8Bjm20/cib.jpg" alt="" className="w-4 h-4 rounded object-contain" /> CIB
+                </button>
+                <button onClick={() => setFilterCardType(filterCardType === 'EDAHABIA' ? '' : 'EDAHABIA')} className={`px-3 py-2 min-h-[44px] sm:min-h-[auto] sm:py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 flex-1 sm:flex-initial ${filterCardType === 'EDAHABIA' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                  <img src="https://i.ibb.co/svrGq7Dh/edahabia.jpg" alt="" className="w-4 h-4 rounded object-contain" /> EDAHABIA
+                </button>
+              </div>
             </div>
             {(filterPaymentStatus || filterCardType) && (
-              <button onClick={() => { setFilterPaymentStatus(''); setFilterCardType(''); }} className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest flex items-center gap-1 ml-auto">
+              <button onClick={() => { setFilterPaymentStatus(''); setFilterCardType(''); }} className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest flex items-center gap-1 ml-auto w-full lg:w-auto justify-center lg:justify-start py-2 min-h-[44px] lg:min-h-[auto]">
                 <X className="w-3 h-3" /> {t.clearFilters}
               </button>
             )}
@@ -598,30 +605,35 @@ const App: React.FC = () => {
 
       {/* Glassmorphic Bulk Action Bar */}
       {selectedClientIds.length > 0 && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-20 duration-500 w-full max-w-2xl px-6">
-          <div className="bg-slate-900/90 dark:bg-slate-800/95 backdrop-blur-2xl px-10 py-6 rounded-[40px] shadow-[0_25px_80px_rgba(0,0,0,0.6)] border border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/30 animate-pulse">
-                {selectedClientIds.length}
+        <div className="fixed bottom-4 sm:bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-20 duration-500 w-full max-w-sm sm:max-w-2xl px-3 sm:px-6">
+          <div className="bg-slate-900/90 dark:bg-slate-800/95 backdrop-blur-2xl px-3 sm:px-6 md:px-10 py-3 sm:py-4 md:py-6 rounded-[24px] sm:rounded-[40px] shadow-[0_25px_80px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6">
+            <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto justify-between sm:justify-start">
+              <div className="flex items-center gap-3 sm:gap-6">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl sm:rounded-3xl bg-indigo-600 flex items-center justify-center text-white font-black text-lg sm:text-xl md:text-2xl shadow-xl shadow-indigo-500/30 animate-pulse">
+                  {selectedClientIds.length}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-white font-black uppercase tracking-widest text-[10px] sm:text-sm">{t.nodesSelected}</span>
+                  <button onClick={() => setSelectedClientIds([])} className="text-indigo-400 hover:text-white text-[9px] sm:text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors mt-1">
+                    <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {t.deselectAll}
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-white font-black uppercase tracking-widest text-sm">{t.nodesSelected}</span>
-                <button onClick={() => setSelectedClientIds([])} className="text-indigo-400 hover:text-white text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors mt-1">
-                  <X className="w-3.5 h-3.5" /> {t.deselectAll}
-                </button>
-              </div>
+              <button onClick={() => setSelectedClientIds([])} className="sm:hidden p-2 rounded-xl bg-white/10 text-white">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
               <button
                 onClick={handleCopySelectedPassports}
-                className={`px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl transition-all flex items-center gap-4 active:scale-95 group ${isBulkCopied ? 'bg-emerald-600 text-white shadow-emerald-600/30' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'}`}
+                className={`flex-1 sm:flex-initial px-4 sm:px-6 md:px-10 py-2.5 sm:py-3 md:py-4 rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-[0.1em] sm:tracking-[0.2em] shadow-xl transition-all flex items-center justify-center gap-2 sm:gap-4 active:scale-95 group ${isBulkCopied ? 'bg-emerald-600 text-white shadow-emerald-600/30' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'}`}
               >
-                {isBulkCopied ? <Check className="w-5 h-5" /> : <ClipboardCopy className="w-5 h-5 group-hover:rotate-12 transition-transform" />}
-                {t.copy}
+                {isBulkCopied ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : <ClipboardCopy className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform" />}
+                <span className="truncate">{t.copy}</span>
               </button>
-              <button onClick={handleBulkDelete} className="px-12 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-red-600/30 transition-all flex items-center gap-4 active:scale-95 group">
-                <Trash2 className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                {t.deleteSelected}
+              <button onClick={handleBulkDelete} className="flex-1 sm:flex-initial px-4 sm:px-6 md:px-12 py-2.5 sm:py-3 md:py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-[0.1em] sm:tracking-[0.2em] shadow-xl shadow-red-600/30 transition-all flex items-center justify-center gap-2 sm:gap-4 active:scale-95 group">
+                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform" />
+                <span className="truncate">{t.deleteSelected}</span>
               </button>
             </div>
           </div>
@@ -629,16 +641,19 @@ const App: React.FC = () => {
       )}
 
       {editingClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/98 backdrop-blur-3xl animate-in fade-in duration-500">
-          <div className="bg-white dark:bg-slate-800 rounded-[64px] shadow-[0_40px_150px_rgba(0,0,0,0.8)] w-full max-w-6xl max-h-[94vh] overflow-hidden border border-white/20">
-            <div className="p-12 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/40">
-              <div className="flex items-center gap-6">
-                <div className="p-5 bg-indigo-600/10 dark:bg-indigo-400/10 rounded-[32px]"><ShieldAlert className="w-10 h-10 text-indigo-600 dark:text-indigo-400" /></div>
-                <div><h3 className="text-4xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">{t.secureEditEngine}</h3><p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2">{t.fileAccessGranted}: {editingClient.passportNumber}</p></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/98 backdrop-blur-3xl animate-in fade-in duration-500">
+          <div className="bg-white dark:bg-slate-800 rounded-[32px] sm:rounded-[48px] md:rounded-[64px] shadow-[0_40px_150px_rgba(0,0,0,0.8)] w-full max-w-full md:max-w-6xl max-h-[100vh] sm:max-h-[95vh] md:max-h-[94vh] overflow-hidden border border-white/20">
+            <div className="p-4 sm:p-6 md:p-12 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/40">
+              <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+                <div className="p-3 sm:p-4 md:p-5 bg-indigo-600/10 dark:bg-indigo-400/10 rounded-[20px] sm:rounded-[28px] md:rounded-[32px] flex-shrink-0"><ShieldAlert className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-indigo-600 dark:text-indigo-400" /></div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-2xl md:text-4xl font-black uppercase tracking-tighter text-slate-900 dark:text-white truncate">{t.secureEditEngine}</h3>
+                  <p className="text-[8px] sm:text-[10px] md:text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2 truncate">{t.fileAccessGranted}: {editingClient.passportNumber}</p>
+                </div>
               </div>
-              <button onClick={() => setEditingClient(null)} className="w-16 h-16 rounded-[28px] bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 hover:rotate-180 transition-all font-black text-2xl hover:bg-red-500 hover:text-white shadow-lg">✕</button>
+              <button onClick={() => setEditingClient(null)} className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-[16px] sm:rounded-[24px] md:rounded-[28px] bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 hover:rotate-180 transition-all font-black text-lg sm:text-xl md:text-2xl hover:bg-red-500 hover:text-white shadow-lg flex-shrink-0">✕</button>
             </div>
-            <div className="p-12 overflow-y-auto max-h-[calc(94vh-180px)] custom-scrollbar">
+            <div className="p-4 sm:p-6 md:p-12 overflow-y-auto max-h-[calc(100vh-140px)] sm:max-h-[calc(95vh-160px)] md:max-h-[calc(94vh-180px)] custom-scrollbar">
               <ClientForm lang={lang} t={t} onSubmit={(data) => handleUpdateClient(editingClient.id, data)} initialData={editingClient} onCancel={() => setEditingClient(null)} />
             </div>
           </div>
