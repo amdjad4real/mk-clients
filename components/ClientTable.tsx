@@ -21,6 +21,7 @@ interface ClientTableProps {
   onConfirmModification?: (id: string) => void;
   onCopy: (c: Client) => void;
   onUpdateType?: (id: string, type: string) => void;
+  onToggleDisabled?: (id: string) => void;
   isFetching?: boolean;
   selectedClientIds?: string[];
   onToggleClientSelect?: (id: string) => void;
@@ -259,7 +260,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                         const modTimeStr = modTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                         return (
-                          <tr key={client.id} className={`group transition-all border-l-[8px] ${isSelected ? 'bg-indigo-50/40 dark:bg-indigo-900/20 border-indigo-600' : styles.row} ${isModified && !isSelected ? 'bg-red-50/20 dark:bg-red-950/20 animate-pulse' : ''}`}>
+                          <tr key={client.id} className={`group transition-all border-l-[8px] ${client.disabled ? 'opacity-60 bg-slate-100 dark:bg-slate-900/60 border-slate-500 line-through' : isSelected ? 'bg-indigo-50/40 dark:bg-indigo-900/20 border-indigo-600' : styles.row} ${isModified && !isSelected ? 'bg-red-50/20 dark:bg-red-950/20 animate-pulse' : ''}`}>
                             <td className="px-6 py-5 text-center">
                               <button onClick={() => onToggleClientSelect?.(client.id)} className={`${isSelected ? 'text-indigo-600' : 'text-slate-300 dark:text-slate-600'} hover:text-indigo-500 transition-all`}>
                                 {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
@@ -403,6 +404,16 @@ const ClientTable: React.FC<ClientTableProps> = ({
                                   <Edit className="w-4 h-4" />
                                 </button>
                                 
+                                {isAdmin && (
+                                  <button 
+                                    onClick={() => onToggleDisabled?.(client.id)}
+                                    className={`p-2.5 rounded-xl transition-all shadow-sm ${client.disabled ? 'bg-slate-50 dark:bg-slate-900/30 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 hover:bg-amber-600 hover:text-white'}`}
+                                    title={client.disabled ? 'Enable' : 'Disable'}
+                                  >
+                                    <ShieldAlert className="w-4 h-4" />
+                                  </button>
+                                )}
+
                                 <button 
                                   onClick={() => handleCopyClientDetails(client)} 
                                   className={`p-2.5 rounded-xl transition-all shadow-sm ${copiedId === client.id ? 'bg-emerald-600 text-white' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-600 hover:text-white'}`}

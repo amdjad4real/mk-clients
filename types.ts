@@ -21,6 +21,7 @@ export interface Client {
   createdAt: string; // ISO timestamp from DB
   updatedAt: string; // ISO timestamp for modifications
   isModified?: boolean; // Flag for admin review
+  disabled?: boolean; // Account status
   user_id?: string; // Ownership field
   type: string; // 'indv' | 'famille'
   payment: {

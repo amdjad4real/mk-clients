@@ -168,10 +168,11 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const calendarRef = useRef<HTMLDivElement>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [disabled, setDisabled] = useState(false);
+    const photoInputRef = useRef<HTMLInputElement>(null);
+    const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -189,6 +190,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
         visaTo: initialData.visaTo || '',
         category: initialData.category || '',
         type: initialData.type || 'indv',
+        disabled: initialData.disabled || false,
         appointmentDate: initialData.appointmentDate || '',
         photoUrl: initialData.photoUrl || '',
         payment: {
@@ -200,6 +202,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ lang, t, onSubmit, initialData,
           paymentStatus: initialData.payment?.paymentStatus || ''
         }
       });
+      setDisabled(initialData.disabled || false);
     }
   }, [initialData]);
 

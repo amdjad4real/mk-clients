@@ -98,6 +98,7 @@ const App: React.FC = () => {
     createdAt: dbItem.created_at,
     updatedAt: dbItem.updated_at || dbItem.created_at,
     isModified: !!dbItem.is_modified,
+    disabled: !!dbItem.disabled,
     user_id: dbItem.user_id,
     type: dbItem.type || 'indv',
     issueDate: dbItem.issue_date,
@@ -206,6 +207,7 @@ const App: React.FC = () => {
         appointment_date: formData.appointmentDate,
         photo_url: formData.photoUrl,
         type: formData.type,
+        disabled: formData.disabled || false,
         is_modified: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -248,6 +250,7 @@ const App: React.FC = () => {
         appointment_date: formData.appointmentDate,
         photo_url: formData.photoUrl,
         type: formData.type,
+        disabled: formData.disabled,
         is_modified: true, 
         updated_at: new Date().toISOString(),
         payment: {
@@ -336,17 +339,15 @@ const App: React.FC = () => {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedClientIds.length === 0) return;
-    const count = selectedClientIds.length;
-    if (!window.confirm(TRANSLATIONS[lang].confirmBulkDelete.replace('{count}', count.toString()))) return;
+  const handleToggleDisabledClient = async (id: string) => {
     try {
-      await Promise.all(selectedClientIds.map(id => deleteDoc(doc(db, 'clients', id))));
-      setClients(prev => prev.filter(c => !selectedClientIds.includes(c.id)));
-      setSelectedClientIds([]);
-    } catch (err: any) {
-      console.error('Batch deletion failed:', err);
-      alert(`${TRANSLATIONS[lang].updateFailed}: ${err.message}`);
+      const client = clients.find(c => c.id === id);
+      if (!client) return;
+      const newStatus = !client.disabled;
+      await updateDoc(doc(db, 'clients', id), { disabled: newStatus });
+      setClients(prev => prev.map(c => c.id === id ? { ...c, disabled: newStatus } : c));
+    } catch (err) {
+      console.error('Failed to toggle disabled status:', err);
     }
   };
 
@@ -595,6 +596,7 @@ const App: React.FC = () => {
             onConfirmModification={handleConfirmModification}
             onCopy={(c) => { setCopyingClient(c); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             onUpdateType={handleUpdateClientType}
+            onToggleDisabled={handleToggleDisabledClient}
             isFetching={isFetchingClients}
             selectedClientIds={selectedClientIds}
             onToggleClientSelect={toggleClientSelection}
