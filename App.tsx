@@ -565,7 +565,7 @@ const App: React.FC = () => {
               >
                 <ClipboardCopy className="w-5 h-5" />
               </button>
-              {agents.map((agent) => (
+              {agents.slice().sort((a, b) => (Number(a.disabled || 0) - Number(b.disabled || 0))).map((agent) => (
                 <div key={agent.id} className="flex-shrink-0 flex items-center gap-2">
                   <button onClick={() => {
                     if (isBulkMode) {
