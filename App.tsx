@@ -15,6 +15,7 @@ import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, Use
 interface Agent {
   id: string;
   email: string;
+  disabled?: boolean;
 }
 
 const App: React.FC = () => {
@@ -49,18 +50,31 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setSession(firebaseUser ? { user: firebaseUser } : null);
-      if (firebaseUser && firebaseUser.email !== 'admin@mkservice.com') {
-        setIsFormOpen(true);
-        // Auto-create users collection doc for existing agents (backfill)
-        const userRef = doc(db, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) {
-          await setDoc(userRef, {
-            email: firebaseUser.email,
-            createdAt: new Date().toISOString()
-          });
+      if (firebaseUser) {
+        // Check if user account is disabled in 'users' collection
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists() && userSnap.data()?.disabled) {
+          await signOut(auth);
+          setSession(null);
+          setIsLoadingSession(false);
+          alert('This account has been disabled by the administrator.');
+          return;
         }
+
+        setSession({ user: firebaseUser });
+        if (firebaseUser.email !== 'admin@mkservice.com') {
+          setIsFormOpen(true);
+          if (!userSnap.exists()) {
+            await setDoc(userDocRef, {
+              email: firebaseUser.email,
+              disabled: false,
+              createdAt: new Date().toISOString()
+            });
+          }
+        }
+      } else {
+        setSession(null);
       }
       setIsLoadingSession(false);
     });
@@ -111,7 +125,11 @@ const App: React.FC = () => {
     if (!isAdmin) return;
     try {
       const snapshot = await getDocs(collection(db, 'users'));
-      const data = snapshot.docs.map(d => ({ id: d.id, email: d.data().email } as Agent));
+      const data = snapshot.docs.map(d => ({ 
+        id: d.id, 
+        email: d.data().email,
+        disabled: !!d.data().disabled
+      } as Agent));
       setAgents(data);
     } catch (err) {
       console.error('Failed to fetch agents:', err);
@@ -472,6 +490,19 @@ const App: React.FC = () => {
     }
   };
 
+  const handleToggleDisabledAgent = async (agentId: string) => {
+    try {
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) return;
+      const newStatus = !agent.disabled;
+      await updateDoc(doc(db, 'users', agentId), { disabled: newStatus });
+      setAgents(prev => prev.map(a => a.id === agentId ? { ...a, disabled: newStatus } : a));
+    } catch (err: any) {
+      console.error('Failed to toggle agent status:', err);
+      alert(`Action failed: ${err.message}`);
+    }
+  };
+
   const t = TRANSLATIONS[lang];
 
   if (isLoadingSession) {
@@ -542,7 +573,7 @@ const App: React.FC = () => {
                     } else {
                       setSelectedUserIds(prev => (prev.length === 1 && prev[0] === agent.id) ? [] : [agent.id]);
                     }
-                  }} className={`px-8 py-5 rounded-3xl font-black text-xs uppercase transition-all flex items-center gap-4 border-4 ${selectedUserIds.includes(agent.id) ? 'bg-blue-600 text-white border-blue-400 shadow-[0_20px_40px_rgba(37,99,235,0.3)] scale-105' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-transparent hover:border-slate-300 dark:hover:border-slate-700'}`}>
+                  }} className={`px-8 py-5 rounded-3xl font-black text-xs uppercase transition-all flex items-center gap-4 border-4 ${agent.disabled ? 'opacity-60 bg-slate-200 dark:bg-slate-900/60 border-slate-400 line-through' : selectedUserIds.includes(agent.id) ? 'bg-blue-600 text-white border-blue-400 shadow-[0_20px_40px_rgba(37,99,235,0.3)] scale-105' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-transparent hover:border-slate-300 dark:hover:border-slate-700'}`}>
                     <div className={`w-3.5 h-3.5 rounded-full ${selectedUserIds.includes(agent.id) ? 'bg-white animate-pulse' : (agentMetrics[agent.id] || 0) > 0 ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
                     <div className="flex flex-col items-start leading-none"><span>{agent.email.split('@')[0]}</span><span className="text-[8px] mt-1 opacity-60">{agent.email.split('@')[1]}</span></div>
                     <span className={`px-2 py-1 rounded-lg text-[10px] ${selectedUserIds.includes(agent.id) ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600'}`}>{agentMetrics[agent.id] || 0}</span>
@@ -553,6 +584,13 @@ const App: React.FC = () => {
                     title="Copier tous les clients"
                   >
                     <ClipboardCopy className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleToggleDisabledAgent(agent.id)}
+                    className={`p-3 rounded-2xl transition-all shadow-sm border ${agent.disabled ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 border-amber-200 dark:border-amber-800/30 hover:bg-amber-600 hover:text-white'}`}
+                    title={agent.disabled ? 'Activer l\'agent' : 'Désactiver l\'agent'}
+                  >
+                    <ShieldAlert className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteAgent(agent.id)}
