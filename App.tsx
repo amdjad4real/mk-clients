@@ -9,7 +9,7 @@ import Auth from './components/Auth';
 import { maskCard, getCardType, sendTelegramAlert, buildBulkPassportText } from './utils/helpers';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query as fireQuery, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { Users, Plus, LayoutGrid, Filter, CheckCircle2, Trash2, ShieldAlert, UserCheck, Layers, CheckSquare, Square, RefreshCw, X, CreditCard, ClipboardCopy, Check } from 'lucide-react';
 
 interface Agent {
@@ -156,8 +156,32 @@ const App: React.FC = () => {
     if (session?.user) {
       fetchClients(false);
       if (isAdmin) fetchAgents();
+      
+      // Setup real-time listener for clients to keep UI instantly synced with Firebase
+      const q = isAdmin ? fireQuery(collection(db, 'clients')) : fireQuery(collection(db, 'clients'), where('user_id', '==', session.user.uid));
+      const unsubscribeClients = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(d => {
+          const docData = d.data() as Record<string, any>;
+          const { id: _supabaseId, ...rest } = docData;
+          return { id: d.id, ...rest };
+        });
+        const sorted = (data as any[]).sort((a, b) => {
+          const dateA = a.created_at || '';
+          const dateB = b.created_at || '';
+          return dateB.localeCompare(dateA);
+        });
+        setClients(sorted.map(mapFromDB));
+        initialFetchDone.current = true;
+        setIsFetchingClients(false);
+      }, (err) => {
+        console.error('Error in clients real-time listener:', err);
+      });
+
+      return () => {
+        unsubscribeClients();
+      };
     }
-  }, [session, fetchClients, fetchAgents, isAdmin]);
+  }, [session, isAdmin, fetchAgents]);
 
   const agentMetrics = useMemo(() => {
     const counts: Record<string, number> = {};
