@@ -455,11 +455,20 @@ const App: React.FC = () => {
     });
   };
 
-  const handleAgentClick = (agentId: string) => {
-    if (isBulkMode) {
-      setSelectedUserIds(prev => prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]);
-    } else {
-      setSelectedUserIds(prev => (prev.length === 1 && prev[0] === agentId) ? [] : [agentId]);
+  const handleDeleteAgent = async (agentId: string) => {
+    if (!window.confirm(`DANGER: Are you sure you want to delete agent "${agents.find(a => a.id === agentId)?.email || agentId}" and all their records? This cannot be undone.`)) return;
+    try {
+      await deleteDoc(doc(db, 'users', agentId));
+      // Also delete all clients belonging to this agent
+      const agentClients = clients.filter(c => c.user_id === agentId);
+      for (const client of agentClients) {
+        await deleteDoc(doc(db, 'clients', client.id));
+      }
+      setAgents(prev => prev.filter(a => a.id !== agentId));
+      setSelectedUserIds(prev => prev.filter(id => id !== agentId));
+    } catch (err: any) {
+      console.error('Failed to delete agent:', err);
+      alert(`Delete failed: ${err.message}`);
     }
   };
 
@@ -527,7 +536,13 @@ const App: React.FC = () => {
               </button>
               {agents.map((agent) => (
                 <div key={agent.id} className="flex-shrink-0 flex items-center gap-2">
-                  <button onClick={() => handleAgentClick(agent.id)} className={`px-10 py-5 rounded-3xl font-black text-xs uppercase transition-all flex items-center gap-4 border-4 ${selectedUserIds.includes(agent.id) ? 'bg-blue-600 text-white border-blue-400 shadow-[0_20px_40px_rgba(37,99,235,0.3)] scale-105' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-transparent hover:border-slate-300 dark:hover:border-slate-700'}`}>
+                  <button onClick={() => {
+                    if (isBulkMode) {
+                      setSelectedUserIds(prev => prev.includes(agent.id) ? prev.filter(id => id !== agent.id) : [...prev, agent.id]);
+                    } else {
+                      setSelectedUserIds(prev => (prev.length === 1 && prev[0] === agent.id) ? [] : [agent.id]);
+                    }
+                  }} className={`px-8 py-5 rounded-3xl font-black text-xs uppercase transition-all flex items-center gap-4 border-4 ${selectedUserIds.includes(agent.id) ? 'bg-blue-600 text-white border-blue-400 shadow-[0_20px_40px_rgba(37,99,235,0.3)] scale-105' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-transparent hover:border-slate-300 dark:hover:border-slate-700'}`}>
                     <div className={`w-3.5 h-3.5 rounded-full ${selectedUserIds.includes(agent.id) ? 'bg-white animate-pulse' : (agentMetrics[agent.id] || 0) > 0 ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
                     <div className="flex flex-col items-start leading-none"><span>{agent.email.split('@')[0]}</span><span className="text-[8px] mt-1 opacity-60">{agent.email.split('@')[1]}</span></div>
                     <span className={`px-2 py-1 rounded-lg text-[10px] ${selectedUserIds.includes(agent.id) ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600'}`}>{agentMetrics[agent.id] || 0}</span>
@@ -538,6 +553,13 @@ const App: React.FC = () => {
                     title="Copier tous les clients"
                   >
                     <ClipboardCopy className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteAgent(agent.id)}
+                    className="p-3 rounded-2xl bg-red-50 dark:bg-red-900/30 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm border border-red-200 dark:border-red-800/30"
+                    title="Supprimer l'agent"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}
